@@ -1,9 +1,9 @@
 import { isEqual } from 'lodash';
 
-function call<R>(f: () => Promise<R>): Promise<R>;
-function call<R, A>(f: (_0: A) => Promise<R>, _0: A): Promise<R>;
-function call<R, A, B>(f: (_0: A, _1: B) => Promise<R>, _0: A, _1: B): Promise<R>;
-function call(f: (...args: any[]) => Promise<any>, ...args: any[]): Promise<any> {
+export function call<R>(f: () => Promise<R>): Promise<R>;
+export function call<R, A>(f: (_0: A) => Promise<R>, _0: A): Promise<R>;
+export function call<R, A, B>(f: (_0: A, _1: B) => Promise<R>, _0: A, _1: B): Promise<R>;
+export function call(f: (...args: any[]) => Promise<any>, ...args: any[]): Promise<any> {
   return f.apply(window, ...args);
 }
 
@@ -20,12 +20,12 @@ export const pureContext: SagaContext = {
   call: call,
 };
 
-interface TestContextResult {
-  ctx: SagaContext;
+export interface TestContextResult<T extends SagaContext = SagaContext> {
+  ctx: T;
   isDone: () => void;
 }
 
-interface TestContextConfiguration {
+export interface TestContextConfiguration {
   stubs: TestContextStub[];
 }
 
