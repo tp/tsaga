@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "jsx": "react",
+    "lib": [
+      "es2015",
+      "es2016",
+      "dom" /* not ideal, but currently needed to make `Promise` work */
+    ],
+    "target": "es6",
+    "strict": true
+  }
+}
