@@ -45,7 +45,12 @@ export function createReduxSagaLikeTestContext(config: ReduxLikeTestContextConfi
       throw new Error(`Function parameters differ`); // TODO: Include helpful diff
     }
 
-    return Promise.resolve(nextStub.result);
+    // TODO: Not ideal, maybe someone wants to pass Error instances in the success result
+    if (nextStub.result instanceof Error) {
+      return Promise.reject(nextStub.result);
+    } else {
+      return Promise.resolve(nextStub.result);
+    }
   };
 
   const putStub = async (message: any): Promise<void> => {

@@ -31,7 +31,7 @@ export interface TestContextConfiguration {
 
 interface TestContextStub {
   function: (x: string) => Promise<any>;
-  params: [string];
+  params: [string] | [string, any];
   result: any;
 }
 
