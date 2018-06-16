@@ -18,6 +18,7 @@
   },
   "scripts": {
     "watch:tsc": "tsc --noEmit --watch",
-    "watch:jest": "jest --watchAll"
+    "watch:jest": "jest --watchAll",
+    "test": "tsc --noEmit && jest"
   }
 }
