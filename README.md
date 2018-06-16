@@ -14,39 +14,19 @@ When using `redux-saga` with TypeScript we were often having tests failing at ru
 
 With the pure TypeScript approach taken by `tsaga`, test declarations are not fully type-checked, so one can't pass an invalid action message or wrong state shapes.
 
+It also checks that all side-effects are mocked, and then called exhaustively and in order.
+
 ```ts
-test('redux-like saga with rollback', async () => {
-  return expectSaga(updateCountMessageOrResetSaga)
-    .withReducer(sampleCountReducer)
-    .toHaveFinalState({ count: 2 })
-    .whenRunWith(
-      createReduxSagaLikeTestContext({
-        stubs: [
-          {
-            function: window.fetch,
-            params: [
-              '/count',
-              {
-                method: 'POST',
-                body: `5`,
-              },
-            ],
-            result: new Error('API Failure'),
-          },
-        ],
-        selectStubs: { count: 2 },
-        puts: [
-          {
-            type: 'setCount',
-            payload: { count: 5 },
-          },
-          {
-            type: 'setCount',
-            payload: { count: 2 },
-          },
-        ],
-      }),
-      { type: 'addToCount', payload: { plus: 3 } },
-    );
-});
+expectSaga(updateCountMessageOrResetSaga)
+  .withReducer(sampleCountReducer)
+  .toHaveFinalState({ count: 5 })
+  .afterIt([
+    selects('count').receiving(2),
+    puts({
+      type: 'setCount',
+      payload: { count: 5 },
+    }),
+    calls(window.fetch).receiving(200),
+  ])
+  .whenRunWith({ type: 'addToCount', payload: { plus: 3 } });
 ```
