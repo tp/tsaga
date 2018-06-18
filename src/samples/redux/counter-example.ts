@@ -29,7 +29,9 @@ export function createSampleReduxStore() {
   return store;
 }
 
-const countSelector = (state: CounterState) => state.count;
+export const nullStateSelector = (state: null) => null;
+
+export const countSelector = (state: CounterState) => state.count;
 
 const someCountedSelector = createSelector(countSelector, (count) => count > 0);
 
