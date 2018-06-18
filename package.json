@@ -23,6 +23,6 @@
     "watch:tsc": "tsc --noEmit --watch",
     "watch:jest": "jest --watchAll",
     "lint": "tslint -c tslint.json --project .",
-    "test": "tsc --noEmit && lint && jest"
+    "test": "tsc --noEmit && yarn lint && jest"
   }
 }
