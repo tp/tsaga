@@ -62,7 +62,7 @@ type SagaP1<ReduxStoreType, P1T> = (ctx: ReduxTsagaContext<ReduxStoreType>, p1: 
 type Reducer<ReducerStateType> = (previous: ReducerStateType, message: any) => ReducerStateType;
 
 interface Step1<ReducerStateType, SagaMessageType> {
-  withStore(): Step2<ReducerStateType, SagaMessageType>;
+  withStore(store: Store<ReducerStateType, any>): Step2<ReducerStateType, SagaMessageType>;
 }
 
 type Step2<ReducerStateType, SagaMessageType> = {
@@ -77,9 +77,9 @@ type Step4<SagaMessageType> = {
   whenRunWith: (messages: SagaMessageType) => Promise<void>;
 };
 
-export function expectSaga<ReduxStoreType, ReduxActionType extends AnyAction>(store: Store<ReduxStoreType, ReduxActionType>, saga: SagaP1<ReduxStoreType, any>): Step1<ReduxStoreType, any> {
+export function expectSaga<ReduxStoreType, ReduxActionType extends AnyAction>(saga: SagaP1<ReduxStoreType, any>): Step1<ReduxStoreType, any> {
   return {
-    withStore: () => {
+    withStore: (store) => {
       return {
         toHaveFinalState: (expectedFinalReducerState) => {
           return {
