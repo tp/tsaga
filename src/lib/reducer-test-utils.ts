@@ -33,7 +33,7 @@ export function expectSaga<ReducerStateType, SagaMessageType>(saga: MessageSaga<
               const contextWithRedirectedPut = {
                 ...context.ctx,
                 put: async (x: any): Promise<void> => {
-                  context.ctx.put(x);
+                  context.ctx.put(x); // tslint:disable-line:no-floating-promises // Fine here, we really want async behavior
                   reducerState = reducer(reducerState, x);
                 },
               };

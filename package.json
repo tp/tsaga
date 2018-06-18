@@ -13,12 +13,16 @@
     "jest": "22",
     "lodash": "^4.17.10",
     "node-fetch": "^2.1.2",
+    "redux": "^4.0.0",
+    "reselect": "^3.0.1",
     "ts-jest": "^22.4.6",
+    "tslint": "^5.10.0",
     "typescript": "^2.9.2"
   },
   "scripts": {
     "watch:tsc": "tsc --noEmit --watch",
     "watch:jest": "jest --watchAll",
-    "test": "tsc --noEmit && jest"
+    "lint": "tslint -c tslint.json --project .",
+    "test": "tsc --noEmit && yarn lint && jest"
   }
 }
