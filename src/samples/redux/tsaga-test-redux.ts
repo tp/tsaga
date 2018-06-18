@@ -80,6 +80,7 @@ type Step4<SagaMessageType> = {
 export function expectSaga<ReduxStoreType, ReduxActionType extends AnyAction>(saga: SagaP1<ReduxStoreType, any>): Step1<ReduxStoreType, any> {
   return {
     withStore: (store) => {
+      // TODO: Reinstate ReduxActionType
       return {
         toHaveFinalState: (expectedFinalReducerState) => {
           return {
