@@ -19,7 +19,9 @@ type Step3<SagaMessageType> = {
   whenRunWith: (ctx: TestContextResult<ReduxLikeSagaContext>, params: SagaMessageType) => Promise<void>;
 };
 
-export function expectSaga<ReducerStateType, SagaMessageType>(saga: MessageSaga<SagaMessageType>): Step1<ReducerStateType, SagaMessageType> {
+export function expectSaga<ReducerStateType, SagaMessageType>(
+  saga: MessageSaga<SagaMessageType>,
+): Step1<ReducerStateType, SagaMessageType> {
   return {
     withReducer: (reducer) => {
       return {
@@ -33,7 +35,7 @@ export function expectSaga<ReducerStateType, SagaMessageType>(saga: MessageSaga<
               const contextWithRedirectedPut = {
                 ...context.ctx,
                 put: async (x: any): Promise<void> => {
-                  context.ctx.put(x); // tslint:disable-line:no-floating-promises // Fine here, we really want async behavior
+                  void context.ctx.put(x);
                   reducerState = reducer(reducerState, x);
                 },
               };
