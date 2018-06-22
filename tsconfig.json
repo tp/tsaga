@@ -7,5 +7,5 @@
     "strict": true
   },
   "include": ["src/**/*"],
-  "exclude": ["src/compilationSamples/**/*"]
+  "exclude": ["src/compilationSamples/samples/**/*"]
 }

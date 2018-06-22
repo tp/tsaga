@@ -1,8 +1,8 @@
 import { createStore } from 'redux';
 import fetch, { Response } from 'node-fetch';
-import { selectsFactory, expectSaga, calls } from '../samples/redux/tsaga-test-redux';
-import { counter, stringLongerThanCountSelector } from '../samples/redux/counter-example';
-import { postString } from '../samples/redux/tsaga-redux';
+import { selectsFactory, expectSaga, calls } from '../../samples/redux/tsaga-test-redux';
+import { counter, stringLongerThanCountSelector } from '../../samples/redux/counter-example';
+import { postString } from '../../samples/redux/tsaga-redux';
 
 test('Saga test', async () => {
   const store = createStore(counter);
