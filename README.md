@@ -26,7 +26,7 @@ expectSaga(updateCountMessageOrResetSaga)
       type: 'setCount',
       payload: { count: 5 },
     }),
-    calls(fetch).receiving(new Response(undefined, { status: 200 })),
+    calls(fetch, '/api/counter', { method: 'POST', body: '5' }).receiving(new Response(undefined, { status: 200 })),
   ])
   .whenRunWith({ type: 'addToCount', payload: { plus: 3 } });
 ```

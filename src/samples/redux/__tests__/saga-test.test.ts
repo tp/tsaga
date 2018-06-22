@@ -11,6 +11,11 @@ test('Saga test', async () => {
   return expectSaga(postString)
     .withStore(store)
     .toHaveFinalState({ count: 0 })
-    .afterIt([selects(stringLongerThanCountSelector, `sample`).receiving(true), calls(fetch).receiving(new Response(undefined, { status: 200 }))])
+    .afterIt([
+      selects(stringLongerThanCountSelector, `sample`).receiving(true),
+      calls(fetch, 'http://localhost/api/stringCollector', { method: 'POST', body: '' }).receiving(
+        new Response(undefined, { status: 200 }),
+      ),
+    ])
     .whenRunWith('');
 });

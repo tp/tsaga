@@ -1,10 +1,12 @@
 import { ReduxTsagaContext } from './tsaga-redux';
 import { Store, AnyAction } from 'redux';
 import { OutputParametricSelector, Selector, OutputSelector } from 'reselect';
+import { isEqual } from 'lodash';
 
 type CallEffectMatcher<T> = {
   type: 'call';
   function: Function;
+  params: any[];
   result: Promise<T>;
 };
 
@@ -26,12 +28,16 @@ type SelectEffectMatcher<AppState, ResultType> = {
 //   };
 // }
 
-export function calls<T>(f: (...args: any[]) => Promise<T>, ...params: any[]): { receiving: (result: T | Promise<T>) => CallEffectMatcher<T> } {
+export function calls<R>(f: () => Promise<R>): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> };
+export function calls<R, A>(f: (_0: A) => Promise<R>, _0: A): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> };
+export function calls<R, A, B>(f: (_0: A, _1: B) => Promise<R>, _0: A, _1: B): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> };
+export function calls<R>(f: (...args: any[]) => Promise<R>, ...params: any[]): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> } {
   return {
-    receiving: (result) => {
+    receiving: (result): CallEffectMatcher<R> => {
       return {
         type: 'call',
         function: f,
+        params: params,
         result: result instanceof Promise ? result : Promise.resolve(result),
       };
     },
@@ -88,7 +94,7 @@ export function expectSaga<ReduxStoreType, ReduxActionType extends AnyAction>(sa
               return {
                 whenRunWith: async (message) => {
                   const testContext: ReduxTsagaContext<ReduxStoreType> = {
-                    call: async (f: Function) => {
+                    call: async (f: Function, ...params: any[]) => {
                       const nextEffect = effects.shift();
 
                       if (!nextEffect) {
@@ -101,6 +107,10 @@ export function expectSaga<ReduxStoreType, ReduxActionType extends AnyAction>(sa
 
                       if (nextEffect.function !== f) {
                         throw new Error(`Called function does not match expected`);
+                      }
+
+                      if (!isEqual(nextEffect.params, params)) {
+                        throw new Error(`Function parameters do not match expectation`);
                       }
 
                       return nextEffect.result;
