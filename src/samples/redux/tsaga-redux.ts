@@ -28,7 +28,7 @@ export async function postString({ call, select }: ReduxTsagaContext<CountReduce
   // const x = await select(nullStateSelector);
 
   if (isLonger) {
-    const response = await call(fetch, `http://localhost/api/stringCollector`, { method: 'POST', body: s });
+    await call(fetch, `http://localhost/api/stringCollector`, { method: 'POST', body: s });
   }
 }
 

@@ -26,7 +26,7 @@ expectSaga(updateCountMessageOrResetSaga)
       type: 'setCount',
       payload: { count: 5 },
     }),
-    calls(window.fetch).receiving(200),
+    calls(fetch).receiving(new Response(undefined, { status: 200 })),
   ])
   .whenRunWith({ type: 'addToCount', payload: { plus: 3 } });
 ```

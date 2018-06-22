@@ -5,7 +5,7 @@ import { OutputParametricSelector, Selector, OutputSelector } from 'reselect';
 type CallEffectMatcher<T> = {
   type: 'call';
   function: Function;
-  result: Promise<any>;
+  result: Promise<T>;
 };
 
 type SelectEffectMatcher<AppState, ResultType> = {
@@ -26,7 +26,7 @@ type SelectEffectMatcher<AppState, ResultType> = {
 //   };
 // }
 
-export function calls(f: Function, ...params: any[]): { receiving: (result: any | Promise<any>) => CallEffectMatcher<any> } {
+export function calls<T>(f: (...args: any[]) => Promise<T>, ...params: any[]): { receiving: (result: T | Promise<T>) => CallEffectMatcher<T> } {
   return {
     receiving: (result) => {
       return {
