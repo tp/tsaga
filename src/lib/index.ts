@@ -4,6 +4,13 @@ export function call<R>(f: () => Promise<R>): Promise<R>;
 export function call<R, A>(f: (_0: A) => Promise<R>, _0: A): Promise<R>;
 export function call<R, A, B>(f: (_0: A, _1: B) => Promise<R>, _0: A, _1: B): Promise<R>;
 export function call(f: (...args: any[]) => Promise<any>, ...args: any[]): Promise<any> {
+  if (!f) {
+    throw new Error(`call: function to be called is undefined`);
+  }
+  if (typeof f !== 'function') {
+    throw new Error(`call: function to be called is not a function`);
+  }
+
   return f.apply(window, ...args);
 }
 
