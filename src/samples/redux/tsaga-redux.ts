@@ -15,7 +15,7 @@ type ContextSelect<State> = {
   <Param1Type, ResultType>(selector: OutputParametricSelector<State, Param1Type, ResultType, any>, _p1: Param1Type): Promise<ResultType>;
 };
 
-type ReduxTsagaContext<State> = {
+export type ReduxTsagaContext<State> = {
   call: typeof call;
   select: ContextSelect<State>;
 };
