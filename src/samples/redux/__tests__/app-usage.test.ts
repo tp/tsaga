@@ -1,15 +1,13 @@
 import { postString, createReduxContext } from '../tsaga-redux';
 import { createStore } from 'redux';
 import { counter } from '../counter-example';
+import * as nock from 'nock';
 
 test('Saga usage with sample redux setup', async () => {
   /**
    * Tests the real application usage of Redux + tsaga
    *
-   * The error (`catch`) is triggered by the `select` working successfully,
-   * but then `window.fetch` being not defined in the node environment
-   *
-   * TODO: Use `nock` or similar in order to let the saga complete successfully
+   *  Uses `nock` to mock the HTTP response in order let the saga complete successfully
    */
   const store = createStore(counter);
 
@@ -21,16 +19,13 @@ test('Saga usage with sample redux setup', async () => {
   store.dispatch({ type: 'INCREMENT' });
   store.dispatch({ type: 'INCREMENT' });
 
+  // won't do anything, as string.length === count
   await postString(ctx, 'ab');
 
-  try {
-    await postString(ctx, 'abc');
-  } catch (e) {
-    // `postString` fails as `window.fetch` is not defined in the node context
-    expect(e.message).toEqual(expect.stringContaining(`function to be called is undefined`));
+  nock('http://localhost')
+    .post('/api/stringCollector')
+    .reply(200, 'collected');
 
-    return;
-  }
-
-  expect(true).toBe(false); // should not be reached; tried saga should've failed
+  // this will now post and receive the above mocked response
+  await postString(ctx, 'abc');
 });

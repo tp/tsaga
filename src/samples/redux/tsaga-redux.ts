@@ -3,6 +3,7 @@ import { stringLongerThanCountSelector, countSelector, nullStateSelector } from 
 import { call } from '../../lib';
 import { Store, AnyAction } from 'redux';
 import { CountReducerState } from '../redux-like-with-reducer/saga-with-reducer';
+import fetch from 'node-fetch';
 
 export function select<State, ResultType>(selector: OutputSelector<State, ResultType, any> | Selector<State, ResultType>): Promise<ResultType>;
 export function select<State, Param1Type, ResultType>(selector: OutputParametricSelector<State, Param1Type, ResultType, any>, _p1: Param1Type): Promise<ResultType>;
@@ -27,7 +28,7 @@ export async function postString({ call, select }: ReduxTsagaContext<CountReduce
   // const x = await select(nullStateSelector);
 
   if (isLonger) {
-    await call(window.fetch, `/api/stringCollector`, { method: 'POST', body: s });
+    const response = await call(fetch, `http://localhost/api/stringCollector`, { method: 'POST', body: s });
   }
 }
 

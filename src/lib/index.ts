@@ -11,7 +11,7 @@ export function call(f: (...args: any[]) => Promise<any>, ...args: any[]): Promi
     throw new Error(`call: function to be called is not a function`);
   }
 
-  return f.apply(window, ...args);
+  return f.call(window, ...args);
 }
 
 export interface SagaContext {
