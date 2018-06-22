@@ -1,0 +1,32 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Test forces compiler errors when invalid types are used 1`] = `
+Array [
+  Object {
+    "character": 65,
+    "fileName": "/Users/timm-l1-dev/Sources/tsaga/src/compilationSamples/redux-test.ts",
+    "line": 14,
+    "message": "Argument of type '5' is not assignable to parameter of type 'boolean'.",
+  },
+  Object {
+    "character": 12,
+    "fileName": "/Users/timm-l1-dev/Sources/tsaga/src/compilationSamples/redux-test.ts",
+    "line": 15,
+    "message": "Argument of type '(url: string | Request, init?: RequestInit | undefined) => Promise<Response>' is not assignable to parameter of type '(_0: undefined, _1: { method: string; body: string; }) => Promise<Response>'.
+  Types of parameters 'url' and '_0' are incompatible.
+    Type 'undefined' is not assignable to type 'string | Request'.",
+  },
+  Object {
+    "character": 63,
+    "fileName": "/Users/timm-l1-dev/Sources/tsaga/src/compilationSamples/redux-test.ts",
+    "line": 18,
+    "message": "Argument of type '404' is not assignable to parameter of type 'Response | Promise<Response>'.",
+  },
+  Object {
+    "character": 17,
+    "fileName": "/Users/timm-l1-dev/Sources/tsaga/src/compilationSamples/redux-test.ts",
+    "line": 20,
+    "message": "Argument of type 'true' is not assignable to parameter of type 'string'.",
+  },
+]
+`;

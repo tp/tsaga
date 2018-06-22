@@ -29,9 +29,19 @@ type SelectEffectMatcher<AppState, ResultType> = {
 // }
 
 export function calls<R>(f: () => Promise<R>): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> };
-export function calls<R, A>(f: (_0: A) => Promise<R>, _0: A): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> };
-export function calls<R, A, B>(f: (_0: A, _1: B) => Promise<R>, _0: A, _1: B): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> };
-export function calls<R>(f: (...args: any[]) => Promise<R>, ...params: any[]): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> } {
+export function calls<R, A>(
+  f: (_0: A) => Promise<R>,
+  _0: A,
+): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> };
+export function calls<R, A, B>(
+  f: (_0: A, _1: B) => Promise<R>,
+  _0: A,
+  _1: B,
+): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> };
+export function calls<R>(
+  f: (...args: any[]) => Promise<R>,
+  ...params: any[]
+): { receiving: (result: R | Promise<R>) => CallEffectMatcher<R> } {
   return {
     receiving: (result): CallEffectMatcher<R> => {
       return {
@@ -46,13 +56,17 @@ export function calls<R>(f: (...args: any[]) => Promise<R>, ...params: any[]): {
 
 type SelectMockCreator<State> = {
   //   <ResultType>(selector: Selector<State, ResultType> | OutputSelector<State, ResultType, any>): Promise<ResultType>;
-  <Param1Type, ResultType>(selector: OutputParametricSelector<State, Param1Type, ResultType, any>, _p1: Param1Type): { receiving: (result: ResultType) => SelectEffectMatcher<State, ResultType> };
+  <Param1Type, ResultType>(selector: OutputParametricSelector<State, Param1Type, ResultType, any>, _p1: Param1Type): {
+    receiving: (result: ResultType) => SelectEffectMatcher<State, ResultType>;
+  };
 };
 
 export function selectsFactory<State>(store: Store<State, any>): SelectMockCreator<State> {
   return (selector: any) => {
     return {
-      receiving: (result: any /* type ensured by SelectMock<State>, don't want to add to signature. TODO: Use `type` like above */): SelectEffectMatcher<State, any> => {
+      receiving: (
+        result: any /* type ensured by SelectMock<State>, don't want to add to signature. TODO: Use `type` like above */,
+      ): SelectEffectMatcher<State, any> => {
         return {
           type: 'select',
           selector: selector,
@@ -76,14 +90,18 @@ type Step2<ReducerStateType, SagaMessageType> = {
 };
 
 type Step3<ReducerStateType, SagaMessageType> = {
-  afterIt: (useEffectMatch: (CallEffectMatcher<any> | SelectEffectMatcher<ReducerStateType, any>)[]) => Step4<SagaMessageType>;
+  afterIt: (
+    useEffectMatch: (CallEffectMatcher<any> | SelectEffectMatcher<ReducerStateType, any>)[],
+  ) => Step4<SagaMessageType>;
 };
 
 type Step4<SagaMessageType> = {
   whenRunWith: (messages: SagaMessageType) => Promise<void>;
 };
 
-export function expectSaga<ReduxStoreType, ReduxActionType extends AnyAction>(saga: SagaP1<ReduxStoreType, any>): Step1<ReduxStoreType, any> {
+export function expectSaga<ReduxStoreType, ReduxActionType extends AnyAction, SagaParam1>(
+  saga: SagaP1<ReduxStoreType, SagaParam1>,
+): Step1<ReduxStoreType, SagaParam1> {
   return {
     withStore: (store) => {
       // TODO: Reinstate ReduxActionType
