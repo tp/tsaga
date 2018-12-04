@@ -80,7 +80,7 @@ export function withLatest<T, State>( // TODO: Move `State` down to `run`
             };
             prevContext = ctx;
 
-            saga(ctx, message).then(resolve);
+            void saga(ctx, message).then(resolve);
           });
         },
       };

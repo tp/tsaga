@@ -25,6 +25,7 @@
     "watch:tsc": "tsc --noEmit --watch",
     "watch:jest": "jest --watchAll",
     "lint": "tslint -c tslint.json --project .",
+    "ts-check": "tsc -w --noEmit",
     "test": "tsc --noEmit && yarn lint && jest",
     "test:updateSnapshots": "jest --updateSnapshot"
   }
