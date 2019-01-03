@@ -1,4 +1,5 @@
 import { ReduxLikeSagaContext } from './redux-like';
+import { Selector } from 'reselect';
 
 type CallEffectMatcher<T> = {
   type: 'call';
@@ -8,8 +9,8 @@ type CallEffectMatcher<T> = {
 
 type SelectEffectMatcher<T> = {
   type: 'select';
-  selector: string;
-  result: Promise<number>;
+  selector: (state: any, ...args: any[]) => T;
+  result: T;
 };
 
 type PutEffectMatcher = {
@@ -24,7 +25,10 @@ export function puts(message: any): PutEffectMatcher {
   };
 }
 
-export function calls(f: Function, ...params: any[]): { receiving: (result: any | Promise<any>) => CallEffectMatcher<any> } {
+export function calls(
+  f: Function,
+  ...params: any[]
+): { receiving: (result: any | Promise<any>) => CallEffectMatcher<any> } {
   return {
     receiving: (result) => {
       return {
@@ -36,13 +40,20 @@ export function calls(f: Function, ...params: any[]): { receiving: (result: any 
   };
 }
 
-export function selects(selector: string): { receiving: (result: number | Error | Promise<any>) => SelectEffectMatcher<any> } {
+export function selects<State, T>(
+  selector: Selector<State, T>,
+): { receiving: (result: number | Error | Promise<any>) => SelectEffectMatcher<any> } {
   return {
     receiving: (result) => {
       return {
         type: 'select',
         selector: selector,
-        result: typeof result === 'number' ? Promise.resolve(result) : result instanceof Error ? Promise.reject(result) : result,
+        result:
+          typeof result === 'number'
+            ? Promise.resolve(result)
+            : result instanceof Error
+            ? Promise.reject(result)
+            : result,
       };
     },
   };
@@ -70,7 +81,9 @@ type Step4<SagaMessageType> = {
   whenRunWith: (messages: SagaMessageType) => Promise<void>;
 };
 
-export function expectSaga<ReducerStateType, SagaMessageType>(saga: MessageSaga<SagaMessageType>): Step1<ReducerStateType, SagaMessageType> {
+export function expectSaga<ReducerStateType, SagaMessageType>(
+  saga: MessageSaga<SagaMessageType>,
+): Step1<ReducerStateType, SagaMessageType> {
   return {
     withReducer: (reducer) => {
       return {
@@ -114,7 +127,7 @@ export function expectSaga<ReducerStateType, SagaMessageType>(saga: MessageSaga<
 
                       reducerState = reducer(reducerState, message);
                     },
-                    select: async (selector) => {
+                    select: (...args: any[]) /* TODO: strict types */ => {
                       const nextEffect = effects.shift();
 
                       if (!nextEffect) {
@@ -125,7 +138,7 @@ export function expectSaga<ReducerStateType, SagaMessageType>(saga: MessageSaga<
                         throw new Error(`Expected ${nextEffect.type} effect, but got select`);
                       }
 
-                      if (nextEffect.selector !== selector) {
+                      if (nextEffect.selector !== args[0]) {
                         throw new Error(`Expected different selector`);
                       }
 

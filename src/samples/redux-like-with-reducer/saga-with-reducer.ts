@@ -33,7 +33,13 @@ export interface AddToCount {
 
 // in practice these should be generated / depend on the usage of the appropriate action creator
 function isSetCountMessage(o: any): o is SetCountMessage {
-  if (o && typeof o === 'object' && o.type === 'setCount' && typeof o.payload === 'object' && typeof o.payload.count === 'number') {
+  if (
+    o &&
+    typeof o === 'object' &&
+    o.type === 'setCount' &&
+    typeof o.payload === 'object' &&
+    typeof o.payload.count === 'number'
+  ) {
     return true;
   }
 
@@ -50,8 +56,10 @@ export function sampleCountReducer(previousState = initialState, message: any): 
   return previousState;
 }
 
+export const getCount = (state: CountReducerState) => state.count;
+
 export async function updateCountMessageOrResetSaga({ call, put, select }: ReduxLikeSagaContext, message: AddToCount) {
-  const previousCount = await select(`count`);
+  const previousCount = await select(getCount);
 
   const newCount = previousCount + message.payload.plus;
   const optimisticUpdateAction: SetCountMessage = {

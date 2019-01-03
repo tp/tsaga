@@ -2,10 +2,21 @@ import { ReduxLikeSagaContext } from '../../lib/redux-like';
 import { TestContextConfiguration, call, TestContextResult } from '../../lib';
 import { isEqual } from 'lodash';
 
-export async function loadCurrentUser({ call, select, put }: ReduxLikeSagaContext, forceReload = false) {
-  const currentUserId = await select('currentUser');
+type User = { id: number };
 
-  const userLoaded = (await select(`user[${currentUserId}].id`)) === currentUserId;
+type AppState = {
+  currentUser: number;
+  users: { [key: number]: User | undefined };
+};
+
+export const getCurrentUserId = (state: AppState) => state.currentUser;
+
+export const getUserWithId = (state: AppState, id: number) => state.users[id] && state.users[id]!.id;
+
+export async function loadCurrentUser({ call, select, put }: ReduxLikeSagaContext, forceReload = false) {
+  const currentUserId: number = await select(getCurrentUserId);
+
+  const userLoaded = (await select(getUserWithId, currentUserId)) === currentUserId;
 
   if (!userLoaded || forceReload) {
     try {
@@ -30,7 +41,9 @@ type ReduxLikeTestContextConfiguration = TestContextConfiguration & {
   // TODO: Allow assertions on put
 };
 
-export function createReduxSagaLikeTestContext(config: ReduxLikeTestContextConfiguration): TestContextResult<ReduxLikeSagaContext> {
+export function createReduxSagaLikeTestContext(
+  config: ReduxLikeTestContextConfiguration,
+): TestContextResult<ReduxLikeSagaContext> {
   // TODO: Import stub call from base implementation
   const stubCall: typeof call = async (f: any, ...args: any[]): Promise<any> => {
     const nextStub = config.stubs.shift();
@@ -68,15 +81,17 @@ export function createReduxSagaLikeTestContext(config: ReduxLikeTestContextConfi
     return Promise.resolve();
   };
 
-  const selectStub = async (selector: string): Promise<number> => {
-    const value = config.selectStubs[selector];
-    delete config.selectStubs[selector];
+  const selectStub = (selector: Function): any => {
+    return 1; // TODO: Correct types
 
-    if (value === undefined) {
-      throw new Error(`select: No stub value for selector "${selector}"`);
-    }
+    // const value = config.selectStubs[selector];
+    // delete config.selectStubs[selector];
 
-    return Promise.resolve(value);
+    // if (value === undefined) {
+    //   throw new Error(`select: No stub value for selector "${selector}"`);
+    // }
+
+    // return Promise.resolve(value);
   };
 
   return {
