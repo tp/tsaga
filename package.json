@@ -21,6 +21,9 @@
     "tslint": "^5.10.0",
     "typescript": "^2.9.2"
   },
+  "peerDependencies": {
+    "redux": "4.x"
+  },
   "scripts": {
     "watch:tsc": "tsc --noEmit --watch",
     "watch:jest": "jest --watchAll",
