@@ -5,15 +5,26 @@ import { Store, AnyAction } from 'redux';
 import { CountReducerState } from '../redux-like-with-reducer/saga-with-reducer';
 import fetch from 'node-fetch';
 
-export function select<State, ResultType>(selector: OutputSelector<State, ResultType, any> | Selector<State, ResultType>): Promise<ResultType>;
-export function select<State, Param1Type, ResultType>(selector: OutputParametricSelector<State, Param1Type, ResultType, any>, _p1: Param1Type): Promise<ResultType>;
-export function select<State, ResultType>(selector: (state: State, ...args: any[]) => ResultType, ...args: any[]): Promise<ResultType> {
+export function select<State, ResultType>(
+  selector: OutputSelector<State, ResultType, any> | Selector<State, ResultType>,
+): Promise<ResultType>;
+export function select<State, Param1Type, ResultType>(
+  selector: OutputParametricSelector<State, Param1Type, ResultType, any>,
+  _p1: Param1Type,
+): Promise<ResultType>;
+export function select<State, ResultType>(
+  selector: (state: State, ...args: any[]) => ResultType,
+  ...args: any[]
+): Promise<ResultType> {
   return Promise.reject(`Not implemented, just base type`);
 }
 
 type ContextSelect<State> = {
   <ResultType>(selector: Selector<State, ResultType> | OutputSelector<State, ResultType, any>): Promise<ResultType>;
-  <Param1Type, ResultType>(selector: OutputParametricSelector<State, Param1Type, ResultType, any>, _p1: Param1Type): Promise<ResultType>;
+  <Param1Type, ResultType>(
+    selector: OutputParametricSelector<State, Param1Type, ResultType, any>,
+    _p1: Param1Type,
+  ): Promise<ResultType>;
 };
 
 export type ReduxTsagaContext<State> = {
@@ -32,9 +43,14 @@ export async function postString({ call, select }: ReduxTsagaContext<CountReduce
   }
 }
 
-export function createReduxContext<State, Action extends AnyAction>(store: Store<State, Action>): ReduxTsagaContext<State> {
+export function createReduxContext<State, Action extends AnyAction>(
+  store: Store<State, Action>,
+): ReduxTsagaContext<State> {
   return {
-    select: function<State, ResultType>(selector: (state: State, ...args: any[]) => ResultType, ...args: any[]): Promise<ResultType> {
+    select: function<ResultType>(
+      selector: (state: State, ...args: any[]) => ResultType,
+      ...args: any[]
+    ): Promise<ResultType> {
       return Promise.resolve(selector.apply(window, [store.getState(), ...args]));
     },
     call: call,

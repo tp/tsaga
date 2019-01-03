@@ -11,15 +11,15 @@
     "@types/lodash": "^4.14.109",
     "@types/nock": "^9.1.3",
     "@types/node-fetch": "^2.1.1",
-    "jest": "22",
+    "jest": "23",
     "lodash": "^4.17.10",
     "nock": "^9.3.3",
     "node-fetch": "^2.1.2",
     "redux": "^4.0.0",
     "reselect": "^3.0.1",
-    "ts-jest": "^22.4.6",
+    "ts-jest": "^23",
     "tslint": "^5.10.0",
-    "typescript": "^2.9.2"
+    "typescript": "^3"
   },
   "peerDependencies": {
     "redux": "4.x"
