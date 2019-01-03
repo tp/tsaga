@@ -1,4 +1,4 @@
-import { loadCurrentUser, createReduxSagaLikeTestContext } from '..';
+import { loadCurrentUser, createReduxSagaLikeTestContext, getCurrentUserId, getUserWithId } from '..';
 
 test('redux-saga like test: User not yet loaded', async () => {
   const { ctx, isDone } = createReduxSagaLikeTestContext({
@@ -11,10 +11,14 @@ test('redux-saga like test: User not yet loaded', async () => {
         },
       },
     ],
-    selectStubs: {
-      currentUser: 5,
-      'user[5].id': -1, // TODO: 🤨
-    },
+
+    selectStubs: [
+      { selector: getCurrentUserId, value: 5 },
+      {
+        selector: getUserWithId,
+        value: -1, // TODO: 🤨
+      },
+    ],
     puts: [
       {
         type: 'userLoaded',
@@ -31,10 +35,13 @@ test('redux-saga like test: User not yet loaded', async () => {
 test('redux-saga like test: User already loaded', async () => {
   const { ctx, isDone } = createReduxSagaLikeTestContext({
     stubs: [],
-    selectStubs: {
-      currentUser: 5,
-      'user[5].id': 5,
-    },
+    selectStubs: [
+      { selector: getCurrentUserId, value: 5 },
+      {
+        selector: getUserWithId,
+        value: 5,
+      },
+    ],
     puts: [],
   });
 
@@ -54,10 +61,13 @@ test('redux-saga like test: User load failure with forced reload', async () => {
         },
       },
     ],
-    selectStubs: {
-      currentUser: 5,
-      'user[5].id': 5,
-    },
+    selectStubs: [
+      { selector: getCurrentUserId, value: 5 },
+      {
+        selector: getUserWithId,
+        value: 5,
+      },
+    ],
     puts: [
       {
         type: 'userLoadFailed',

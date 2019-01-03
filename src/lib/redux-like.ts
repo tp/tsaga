@@ -15,11 +15,11 @@ interface Action {
 }
 
 type Put = (action: Action) => Promise<void>;
+// function select<State, P1, P2, T>(selector: (state: , p1: P1, p2: P2) => T, p1: P1, p2: P2): T
 
-function select<T>(selector: (state: any) => T): T;
-function select<P1, T>(selector: (state: any, p1: P1) => T, p1: P1): T;
-function select<P1, P2, T>(selector: (state: any, p2: P2) => T, p1: P1, p2: P2): T;
-function select<T>(...x: any[]): T {
+function select<State, T>(selector: (state: State) => T, p1?: never, p2?: never): T;
+function select<State, P1, T>(selector: (state: State, p1: P1) => T, p1: P1, p2?: never): T;
+function select<State, P1, P2, T>(selector: (state: State, p1: P1, p2: P2) => T, p1: P1, p2: P2): T {
   throw new Error(`not to be called`);
 }
 

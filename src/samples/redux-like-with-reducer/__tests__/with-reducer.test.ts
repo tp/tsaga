@@ -1,5 +1,11 @@
 import { expectSaga } from '../../../lib/reducer-test-utils';
-import { updateCountMessageOrResetSaga, sampleCountReducer, AddToCount, CountReducerState } from '../saga-with-reducer';
+import {
+  updateCountMessageOrResetSaga,
+  sampleCountReducer,
+  AddToCount,
+  CountReducerState,
+  getCount,
+} from '../saga-with-reducer';
 import { createReduxSagaLikeTestContext } from '../../redux-like-saga';
 
 test('redux-like saga with reducer succes', async () => {
@@ -23,7 +29,7 @@ test('redux-like saga with reducer succes', async () => {
             result: undefined,
           },
         ],
-        selectStubs: { count: 2 },
+        selectStubs: [{ selector: getCount, value: 2 }],
         puts: [
           {
             // optimistic and final update
@@ -55,7 +61,7 @@ test('redux-like saga with rollback', async () => {
             result: new Error('API Failure'),
           },
         ],
-        selectStubs: { count: 2 },
+        selectStubs: [{ selector: getCount, value: 2 }],
         puts: [
           {
             type: 'setCount',

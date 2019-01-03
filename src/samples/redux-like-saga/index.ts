@@ -36,7 +36,7 @@ export async function loadCurrentUser({ call, select, put }: ReduxLikeSagaContex
 }
 
 type ReduxLikeTestContextConfiguration = TestContextConfiguration & {
-  selectStubs: { [selector: string]: number | undefined };
+  selectStubs: { selector: any; value: any }[];
   puts: any[];
   // TODO: Allow assertions on put
 };
@@ -81,17 +81,15 @@ export function createReduxSagaLikeTestContext(
     return Promise.resolve();
   };
 
-  const selectStub = (selector: Function): any => {
-    return 1; // TODO: Correct types
+  const selectStub = <T>(selector: (...args: any[]) => T, ...args: any[]): T => {
+    const stubIndex = config.selectStubs.findIndex((stub) => stub.selector === selector);
+    if (stubIndex < 0) {
+      throw new Error(`select: No stub value for selector "${selector}"`);
+    }
 
-    // const value = config.selectStubs[selector];
-    // delete config.selectStubs[selector];
+    const stub = config.selectStubs.splice(stubIndex, 1)[0];
 
-    // if (value === undefined) {
-    //   throw new Error(`select: No stub value for selector "${selector}"`);
-    // }
-
-    // return Promise.resolve(value);
+    return stub.value;
   };
 
   return {
