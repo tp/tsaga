@@ -31,5 +31,8 @@
     "ts-check": "tsc -w --noEmit",
     "test": "tsc --noEmit && yarn lint && jest",
     "test:updateSnapshots": "jest --updateSnapshot"
+  },
+  "dependencies": {
+    "typescript-fsa": "^3.0.0-beta-2"
   }
 }
