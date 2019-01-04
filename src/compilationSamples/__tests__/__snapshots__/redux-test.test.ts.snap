@@ -9,12 +9,10 @@ Array [
     "message": "Argument of type '5' is not assignable to parameter of type 'boolean'.",
   },
   Object {
-    "character": 12,
+    "character": 19,
     "fileName": "redux-test.ts",
     "line": 15,
-    "message": "Argument of type '(url: string | Request, init?: RequestInit | undefined) => Promise<Response>' is not assignable to parameter of type '(_0: undefined, _1: { method: string; body: string; }) => Promise<Response>'.
-  Types of parameters 'url' and '_0' are incompatible.
-    Type 'undefined' is not assignable to type 'string | Request'.",
+    "message": "Argument of type 'undefined' is not assignable to parameter of type 'string | Request'.",
   },
   Object {
     "character": 63,
