@@ -1,6 +1,7 @@
 import { Store, applyMiddleware, Middleware } from 'redux';
 import actionCreatorFactory, { isType, ActionCreator, Action as FSAAction } from 'typescript-fsa';
 import { createNoSubstitutionTemplateLiteral } from 'typescript';
+import { resolve } from 'url';
 
 /**
  * library
@@ -13,14 +14,30 @@ type Action = { type: string; payload: any }; // TODO: Use better action creator
 //   throw new Error(`not to be called`);
 // }
 
+class CancellationToken {
+  private _canceled = false;
+
+  public cancel() {
+    console.error(`cancelling via token`);
+    this._canceled = true;
+  }
+
+  public get canceled() {
+    return this._canceled;
+  }
+}
+
 class Context<StateT, ActionT extends Action> {
-  constructor(private store: Store<StateT, ActionT>) {
+  constructor(private store: Store<StateT, ActionT>, private cancellationToken?: CancellationToken) {
     (this as any).call = this.call.bind(this);
     (this as any).select = this.select.bind(this);
     (this as any).put = this.put.bind(this);
   }
 
   public put(action: ActionT): void {
+    if (this.cancellationToken && this.cancellationToken.canceled) {
+      throw new Error(`Saga has been cancelled`);
+    }
     // console.error(`put`, action);
     this.store.dispatch(action);
     // console.error(`state after put`, this.store.getState());
@@ -29,6 +46,10 @@ class Context<StateT, ActionT extends Action> {
   public call<T>(f: () => T): T extends Promise<any> ? T : Promise<T>;
   public call<T, P1>(f: (p1: P1) => T, p1: P1): T extends Promise<any> ? T : Promise<T>;
   public call(f: Function, ...args: any[]): any {
+    if (this.cancellationToken && this.cancellationToken.canceled) {
+      throw new Error(`Saga has been cancelled`);
+    }
+
     return Promise.resolve(f(...args));
   }
 
@@ -36,23 +57,42 @@ class Context<StateT, ActionT extends Action> {
   public select<P1, T>(selector: (state: StateT, p1: P1) => T, p1: P1, p2?: never): T;
   public select<P1, P2, T>(selector: (state: StateT, p1: P1, p2: P2) => T, p1: P1, p2: P2): T;
   public select<T>(selector: (state: StateT, ...args: any[]) => T, ...args: any[]): T {
+    if (this.cancellationToken && this.cancellationToken.canceled) {
+      throw new Error(`Saga has been cancelled`);
+    }
+
     return selector(this.store.getState(), ...args);
   }
 }
 
 type Saga<StateT, ActionT extends Action, Payload> = {
   actionCreator: ActionCreator<Payload>;
-  saga: (ctx: Context<StateT, ActionT>, action: FSAAction<Payload>) => void;
+  saga: (ctx: Context<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>;
+  type: 'every' | 'latest';
 };
 
 function createTypedForEvery<StateT, ActionT extends Action>(): (<Payload>(
   actionCreator: ActionCreator<Payload>,
-  saga: (ctx: Context<StateT, ActionT>, action: FSAAction<Payload>) => void,
+  saga: (ctx: Context<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>,
 ) => Saga<StateT, ActionT, Payload>) {
   return (actionCreator, saga) => {
     return {
       actionCreator,
       saga,
+      type: 'every',
+    };
+  };
+}
+
+function createTypedForLatest<StateT, ActionT extends Action>(): (<Payload>(
+  actionCreator: ActionCreator<Payload>,
+  saga: (ctx: Context<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>,
+) => Saga<StateT, ActionT, Payload>) {
+  return (actionCreator, saga) => {
+    return {
+      actionCreator,
+      saga,
+      type: 'latest',
     };
   };
 }
@@ -62,21 +102,43 @@ type AnySaga = Saga<any, any, any>;
 export function tsagaReduxMiddleware(...sagas: AnySaga[]) {
   // TODO: Remove completed sagas from this (currently leaks all results)
   const sagaPromises: any = [];
+  const cancellationTokens = new Map<AnySaga, CancellationToken>();
 
   const middleWare: Middleware = (api) => {
     return function next(next) {
       return function(action) {
-        // console.error(`action`, action, `state`, api.getState());
+        console.error(`action`, action, `state`, api.getState());
 
         next(action);
 
         for (const saga of sagas) {
           if (isType(action, saga.actionCreator)) {
-            const context = new Context(api as any /* subscribe is missing, but that's fine for now */);
+            let cancellationToken;
+            if (saga.type === 'latest') {
+              const runningSagaCancellationToken = cancellationTokens.get(saga);
+              if (runningSagaCancellationToken) {
+                runningSagaCancellationToken.cancel();
+              }
 
+              cancellationToken = new CancellationToken();
+              cancellationTokens.set(saga, cancellationToken);
+            }
+
+            const context = new Context(
+              api as any /* subscribe is missing, but that's fine for now */,
+              cancellationToken,
+            );
             // console.error(`action matches expected creator`, action, `running saga`);
 
-            sagaPromises.push(saga.saga(context, action));
+            sagaPromises.push(
+              saga
+                .saga(context, action)
+                .then((e) => 'completed')
+                .catch((e) => {
+                  // console.error(`Saga failed`, e);
+                  return 'failed';
+                }),
+            );
           }
         }
       };
@@ -86,7 +148,8 @@ export function tsagaReduxMiddleware(...sagas: AnySaga[]) {
   const sagaCompletion = async (): Promise<void> => {
     const promises = sagaPromises.slice(0);
 
-    await Promise.all(promises);
+    const res = await Promise.all(promises);
+    console.error(`res`, res);
   };
 
   return { middleware: middleWare, sagaCompletion };
@@ -98,8 +161,16 @@ export function tsagaReduxMiddleware(...sagas: AnySaga[]) {
  *
  */
 
+// helpers
+function sleep(timeoutMS: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(), timeoutMS);
+  });
+}
+
 // Know the store here already? Or add that later?
 const forEvery = createTypedForEvery<AppState, Action>();
+const forLatest = createTypedForLatest<AppState, Action>();
 
 type User = {
   id: number;
@@ -107,20 +178,24 @@ type User = {
 };
 
 type AppState = {
+  count: number;
   selectedUser: number | null;
   usersById: { [key: number]: User | undefined };
 };
 
 // action creators
 const createActionCreator = actionCreatorFactory('User');
+export const setCount = createActionCreator<{ count: number }>('set_count');
 export const userSelected = createActionCreator<{ id: number }>('selected');
 export const userLoaded = createActionCreator<{ user: User }>('loaded');
 
 // selectors
+const getCount = (state: AppState) => state.count;
 const getSelectedUserId = (state: AppState) => state.selectedUser;
 const getUserById = (state: AppState, id: number) => state.usersById[id];
 
 const initialState: AppState = {
+  count: 0,
   selectedUser: null,
   usersById: {},
 };
@@ -137,6 +212,12 @@ export function userReducer(state = initialState, action: Action): AppState {
         ...state.usersById,
         [action.payload.user.id]: action.payload.user,
       },
+    };
+  } else if (isType(action, setCount)) {
+    console.error(`reducer: set count`, action.payload);
+    return {
+      ...state,
+      count: action.payload.count,
     };
   } else {
     // console.error(`reducer unhandled action`, action);
@@ -175,4 +256,18 @@ export const watchForUserSelect = forEvery(userSelected, async ({ call, put, sel
   } else {
     console.log(`not loading user, already present`);
   }
+});
+
+export const watchForUserSelectLatest = forLatest(userSelected, watchForUserSelect.saga);
+
+export const increaseSelectedUserAfter3s = forLatest(userSelected, async ({ call, put, select }, action) => {
+  console.error(`about to sleep`);
+
+  await sleep(3000);
+
+  console.error(`sleep done`);
+  const count = select(getCount);
+  console.error(`about to set new count:`, count + 1);
+  put(setCount({ count: count + 1 }));
+  console.error(`count set`, select(getCount));
 });
