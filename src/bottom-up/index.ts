@@ -14,6 +14,16 @@ type Action = { type: string; payload: any }; // TODO: Use better action creator
 //   throw new Error(`not to be called`);
 // }
 
+class SagaCancelledError extends Error {
+  constructor(...args: any[]) {
+    super(...args);
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, SagaCancelledError);
+    }
+  }
+}
+
 class CancellationToken {
   private _canceled = false;
 
@@ -36,7 +46,7 @@ class Context<StateT, ActionT extends Action> {
 
   public put(action: ActionT): void {
     if (this.cancellationToken && this.cancellationToken.canceled) {
-      throw new Error(`Saga has been cancelled`);
+      throw new SagaCancelledError(`Saga has been cancelled`);
     }
     // console.error(`put`, action);
     this.store.dispatch(action);
@@ -47,7 +57,7 @@ class Context<StateT, ActionT extends Action> {
   public call<T, P1>(f: (p1: P1) => T, p1: P1): T extends Promise<any> ? T : Promise<T>;
   public call(f: Function, ...args: any[]): any {
     if (this.cancellationToken && this.cancellationToken.canceled) {
-      throw new Error(`Saga has been cancelled`);
+      throw new SagaCancelledError(`Saga has been cancelled`);
     }
 
     return Promise.resolve(f(...args));
@@ -58,7 +68,7 @@ class Context<StateT, ActionT extends Action> {
   public select<P1, P2, T>(selector: (state: StateT, p1: P1, p2: P2) => T, p1: P1, p2: P2): T;
   public select<T>(selector: (state: StateT, ...args: any[]) => T, ...args: any[]): T {
     if (this.cancellationToken && this.cancellationToken.canceled) {
-      throw new Error(`Saga has been cancelled`);
+      throw new SagaCancelledError(`Saga has been cancelled`);
     }
 
     return selector(this.store.getState(), ...args);
@@ -135,7 +145,11 @@ export function tsagaReduxMiddleware(...sagas: AnySaga[]) {
                 .saga(context, action)
                 .then((e) => 'completed')
                 .catch((e) => {
-                  // console.error(`Saga failed`, e);
+                  if (e instanceof SagaCancelledError) {
+                    return 'cancelled';
+                  }
+
+                  console.error(`Saga failed`, e);
                   return 'failed';
                 }),
             );
