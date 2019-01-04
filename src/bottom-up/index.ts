@@ -1,18 +1,10 @@
-import { Store, applyMiddleware, Middleware } from 'redux';
+import { Store, Middleware } from 'redux';
 import actionCreatorFactory, { isType, ActionCreator, Action as FSAAction } from 'typescript-fsa';
-import { createNoSubstitutionTemplateLiteral } from 'typescript';
-import { resolve } from 'url';
 
 /**
  * library
  */
-type Action = { type: string; payload: any }; // TODO: Use better action creators / types like FSA
-
-// function select<State, T>(selector: (state: State) => T, p1?: never, p2?: never): T;
-// function select<State, P1, T>(selector: (state: State, p1: P1) => T, p1: P1, p2?: never): T;
-// function select<State, P1, P2, T>(selector: (state: State, p1: P1, p2: P2) => T, p1: P1, p2: P2): T {
-//   throw new Error(`not to be called`);
-// }
+type Action = { type: string; payload: any };
 
 class SagaCancelledError extends Error {
   constructor(...args: any[]) {
