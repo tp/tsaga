@@ -1,8 +1,8 @@
-import { forEvery, forLatest, OmsEnv } from './sagas';
-import { userSelected, userLoaded, setCount } from './actions';
-import { getSelectedUserId, getUserById, getCount } from './selectors';
-import { loadUser, sleep } from './app-library';
-import { Environment } from '../lib/environment';
+import { forEvery, forLatest, OmsEnv } from '../sagas';
+import { userSelected, userLoaded, setCount } from '../actions';
+import { getSelectedUserId, getUserById, getCount } from '../selectors';
+import { loadUser, sleep } from '../app-library';
+import { call } from '../../../lib';
 
 /**
  * consumer
@@ -38,22 +38,29 @@ export const watchForUserSelectToLoad = forLatest(userSelected, async ({ call, p
 
 //   export const watchForUserSelectLatest = forLatest(userSelected, watchForUserSelect.saga);
 //
-export function increaseCounter(ctx: OmsEnv) {
-  const { call, put, select } = ctx;
-
-  const count = select(getCount);
+export function increaseCounter(env: OmsEnv) {
+  const count = env.select(getCount);
   console.error(`about to set new count:`, count + 1);
-  put(setCount({ count: count + 1 }));
-  console.error(`count set`, select(getCount));
+
+  env.put(setCount({ count: count + 1 }));
+  console.error(`count set`, env.select(getCount));
 }
 
-export const watchForUserSelectorToCount = forEvery(userSelected, async (ctx, action) => {
-  const { call, put, select } = ctx;
+export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(userSelected, async (env, action) => {
+  const { call, callEnv, select, put } = env;
+
+  console.error(env);
 
   console.error(`about to sleep`);
 
   await call(sleep, 3000);
 
   console.error(`sleep done`);
-  await call(increaseCounter, ctx);
+
+  await callEnv(increaseCounter);
 });
+
+export const watchForUserSelectorToCountImmediately = forEvery(
+  userSelected,
+  watchForUserSelectorToCountIfNotChangedWithing3s.saga,
+);

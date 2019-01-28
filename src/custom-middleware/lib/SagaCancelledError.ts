@@ -1,4 +1,4 @@
-class SagaCancelledError extends Error {
+export class SagaCancelledError extends Error {
   constructor(...args: any[]) {
     super(...args);
 

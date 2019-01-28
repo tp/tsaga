@@ -3,6 +3,7 @@ import actionCreatorFactory, { isType, ActionCreator, Action as FSAAction } from
 import { Action } from './types';
 import { Environment } from './environment';
 import { CancellationToken } from './CancellationToken';
+import { SagaCancelledError } from './SagaCancelledError';
 
 type Saga<StateT, ActionT extends Action, Payload> = {
   actionCreator: ActionCreator<Payload>;
