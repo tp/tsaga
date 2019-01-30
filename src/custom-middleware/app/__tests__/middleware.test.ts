@@ -9,6 +9,7 @@ import {
 import { userReducer } from '../reducers';
 import { userSelected } from '../actions';
 import { testSaga, calls } from '../../lib/testHelpers';
+import { sleep } from '../app-library';
 
 nock.disableNetConnect();
 
@@ -43,10 +44,18 @@ test('Inrease count (usage example; no mocks)', async () => {
   expect(finalState.count).toEqual(1);
 });
 
-test('Test helper with mocked call', async () => {
+test('Test helper with mocked call to sub saga', async () => {
   await testSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
     .with(userSelected({ id: 2 })) // TODO: Should we provide an initial state (AppState) here? Then we wouldn't have to mock `select`s
     .which(calls(increaseCounter).receiving()) // TODO: Do we need an assertion for calls that are supposed to be made, but passed through / actually executed? Or maybe shouldn't `callEnv` be mocked (usually) because of the side-effects which can't be replicated here?
     .resultingInState({ count: 0, selectedUser: null, usersById: {} })
     .forReducer(userReducer); // Since we stub out increaseCounter to do nothing, no side-effect is called
+});
+
+test('Test helper with mocked call to sub saga', async () => {
+  await testSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
+    .with(userSelected({ id: 5 }))
+    .which(calls(sleep).receiving({}))
+    .resultingInState({ count: 1, selectedUser: 5, usersById: {} })
+    .forReducer(userReducer);
 });

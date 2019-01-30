@@ -23,6 +23,8 @@ export function calls<T extends (...args: any[]) => any>(f: T): ValueMockBuilder
   };
 }
 
+type ReturnedPromiseResolvedType<T> = T extends (...args: any[]) => Promise<infer R> ? R : never;
+
 export function selects<T extends (...args: any[]) => any>(f: T): ValueMockBuilder<ReturnType<T>> {
   return {
     receiving: (value): ValueMock<ReturnType<T>> => {
