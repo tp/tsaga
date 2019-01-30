@@ -52,10 +52,10 @@ test('Test helper with mocked call to sub saga', async () => {
     .forReducer(userReducer); // Since we stub out increaseCounter to do nothing, no side-effect is called
 });
 
-test('Test helper with mocked call to sub saga', async () => {
+test('Test helper with call not mocked', async () => {
   await testSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
     .with(userSelected({ id: 5 }))
-    .which(calls(sleep).receiving({}))
+    .which(calls(sleep).receiving(Promise.resolve())) // TODO: Fix types such that this doesn't need to be provided
     .resultingInState({ count: 1, selectedUser: 5, usersById: {} })
     .forReducer(userReducer);
 });

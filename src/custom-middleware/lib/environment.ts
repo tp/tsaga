@@ -23,6 +23,7 @@ export class Environment<StateT, ActionT extends Action> {
 
   public call<T>(f: () => T): T extends Promise<any> ? T : Promise<T>;
   public call<T, P1>(f: (p1: P1) => T, p1: P1): T extends Promise<any> ? T : Promise<T>;
+  public call<T, P1, P2>(f: (p1: P1, p2: P2) => T, p1: P1, p2: P2): T extends Promise<any> ? T : Promise<T>;
   public call(f: Function, ...args: any[]): any {
     if (this.cancellationToken && this.cancellationToken.canceled) {
       throw new SagaCancelledError(`Saga has been cancelled`);

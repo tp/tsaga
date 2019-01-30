@@ -3,8 +3,10 @@
     "module": "commonjs",
     "jsx": "react",
     "lib": ["es2015", "es2016", "dom" /* not ideal, but currently needed to make `Promise` work */],
-    "target": "es6",
-    "strict": true
+    "target": "es5",
+    "strict": true,
+    "outDir": "./compiled",
+    "declaration": true
   },
   "include": ["src/**/*"],
   "exclude": ["src/compilationSamples/samples/**/*"]

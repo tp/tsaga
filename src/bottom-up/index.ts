@@ -266,14 +266,22 @@ export const watchForUserSelect = forEvery(userSelected, async ({ call, put, sel
 
 export const watchForUserSelectLatest = forLatest(userSelected, watchForUserSelect.saga);
 
-export const increaseSelectedUserAfter3s = forLatest(userSelected, async ({ call, put, select }, action) => {
+function increaseCounter(ctx: Context<AppState, Action>) {
+  const { call, put, select } = ctx;
+
+  const count = select(getCount);
+  console.error(`about to set new count:`, count + 1);
+  put(setCount({ count: count + 1 }));
+  console.error(`count set`, select(getCount));
+}
+
+export const increaseSelectedUserAfter3s = forLatest(userSelected, async (ctx, action) => {
+  const { call, put, select } = ctx;
+
   console.error(`about to sleep`);
 
   await sleep(3000);
 
   console.error(`sleep done`);
-  const count = select(getCount);
-  console.error(`about to set new count:`, count + 1);
-  put(setCount({ count: count + 1 }));
-  console.error(`count set`, select(getCount));
+  await call(increaseCounter, ctx);
 });

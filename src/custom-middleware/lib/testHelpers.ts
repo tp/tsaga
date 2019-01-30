@@ -88,6 +88,8 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                       return 0 as any;
                     },
                     callEnv: (f: any) => {
+                      f(testContext);
+
                       return 0 as any;
                     },
                     select: () => {
