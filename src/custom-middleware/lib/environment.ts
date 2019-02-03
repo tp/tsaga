@@ -1,12 +1,14 @@
-import {Store} from 'redux';
-import {CancellationToken} from './CancellationToken';
-import {SagaCancelledError} from './SagaCancelledError';
-import {Action} from './types';
+import { Store } from 'redux';
+import { CancellationToken } from './CancellationToken';
+import { SagaCancelledError } from './SagaCancelledError';
+import { Action } from './types';
+import { ActionCreator, Action as FsaAction } from 'typescript-fsa';
 
 export class Environment<StateT, ActionT extends Action> {
   constructor(
     private readonly store: Store<StateT, ActionT>,
-    private readonly cancellationToken?: CancellationToken
+    private readonly waitForMessage: <Payload>(action: ActionCreator<Payload>) => Promise<FsaAction<Payload>>,
+    private readonly cancellationToken?: CancellationToken,
   ) {
     // Manually binding this is still needed, as TS doesn't accept overloads otherwise
     (this as any).run = this.run.bind(this);
@@ -18,7 +20,7 @@ export class Environment<StateT, ActionT extends Action> {
     }
 
     this.store.dispatch(action);
-  }
+  };
 
   public createDetachedChildEnvironment(): {
     childEnv: Environment<StateT, ActionT>;
@@ -30,21 +32,18 @@ export class Environment<StateT, ActionT extends Action> {
 
     // this is used for forks, to it shouldn't be cancelled when the parent is cancelled
     const cancellationToken = new CancellationToken();
-    const childEnv = new Environment(this.store, cancellationToken);
+    const childEnv = new Environment(this.store, this.waitForMessage, cancellationToken);
 
-    return {childEnv, cancellationToken};
+    return { childEnv, cancellationToken };
   }
 
-  public select = <T, P extends any[]>(
-    selector: (state: StateT, ...p1: P) => T,
-    ...args: P
-  ): T => {
+  public select = <T, P extends any[]>(selector: (state: StateT, ...p1: P) => T, ...args: P): T => {
     if (this.cancellationToken && this.cancellationToken.canceled) {
       throw new SagaCancelledError(`Saga has been cancelled`);
     }
 
     return selector(this.store.getState(), ...args);
-  }
+  };
 
   public run<T, P extends any[]>(f: (...params: P) => T, ...params: P): T;
   public run<T>(effect: Effect<T, this>): T;
@@ -55,6 +54,10 @@ export class Environment<StateT, ActionT extends Action> {
 
     return first.run(this);
   }
+
+  public __INTERNAL__waitForMessage = <Payload>(actionCreator: ActionCreator<Payload>): Promise<FsaAction<Payload>> => {
+    return this.waitForMessage(actionCreator);
+  };
 }
 
 export interface Effect<T, Env> {
@@ -64,4 +67,12 @@ export interface Effect<T, Env> {
 export interface Task<T> {
   result: T;
   cancel: () => void;
+}
+
+export function waitFor<Payload>(actionCreator: ActionCreator<Payload>): Effect<FsaAction<Payload>, any> {
+  return {
+    run: (env) => {
+      return env.__INTERNAL__waitForMessage(actionCreator);
+    },
+  };
 }

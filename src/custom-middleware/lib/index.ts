@@ -5,7 +5,7 @@ import { Environment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
 
-export { Task, Effect } from './environment';
+export { Task, Effect, waitFor } from './environment';
 export { Action } from './types';
 export { Environment };
 
@@ -47,6 +47,13 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
   // TODO: Remove completed sagas from this (currently leaks all results)
   const sagaPromises: any = [];
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
+  const awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
+
+  function waitForMessage<Payload>(actionCreator: ActionCreator<Payload>): Promise<FSAAction<Payload>> {
+    return new Promise((resolve, reject) => {
+      awaitingMessages.push({ actionCreator: actionCreator, promiseResolve: resolve });
+    });
+  }
 
   const middleWare: Middleware = (api) => {
     return function next(next) {
@@ -54,6 +61,14 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
         console.error(`action`, action, `state`, api.getState());
 
         next(action);
+
+        for (let i = awaitingMessages.length - 1; i--; i >= 0) {
+          const config = awaitingMessages[i];
+          if (isType(action, config.actionCreator)) {
+            config.promiseResolve(action);
+            awaitingMessages.splice(i, 1);
+          }
+        }
 
         for (const saga of sagas) {
           if (isType(action, saga.actionCreator)) {
@@ -70,6 +85,7 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
 
             const context = new Environment(
               api as any /* TODO: subscribe is missing, but that's fine for now */,
+              waitForMessage,
               cancellationToken,
             );
             // console.error(`action matches expected creator`, action, `running saga`);
