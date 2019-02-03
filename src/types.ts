@@ -1,23 +1,28 @@
 import { Action, Middleware } from 'redux';
 import { ActionCreator } from 'typescript-fsa';
 
-interface Effect<Env, Args extends any[], Return> {
-  run(env: Env, ...args: Args): Return,
-}
-
 interface SagaEnvironment<State> {
+  /**
+   *
+   * @param action
+   */
   dispatch(action: Action<any>): void;
 
+  /**
+   *
+   * @param f
+   * @param args
+   */
   call<Args extends any[], Return>(
     f: (...args: Args) => Return,
     ...args: Args
   ): Promise<Return>;
 
-  call<Args extends any[], Return>(
-    effect: Effect<this, Args, Return>,
-    ...args: Args
-  ): Promise<Return>;
-
+  /**
+   *
+   * @param selector
+   * @param args
+   */
   select<Args extends any[], Return>(
     selector: (state: State, ...args: Args) => Return,
     ...args: Args
@@ -37,16 +42,38 @@ interface Saga<State, Payload> {
 }
 
 interface SagaMiddleware<State> {
+  /**
+   * The middleware to pass to reduxs createStore function.
+   */
   middleware: Middleware,
+
+  /**
+   * Wait for the current sagas to complete.
+   */
+  sagaCompletion(): Promise<void>,
+
+  /**
+   * Create a new saga watcher for every action that is being dispatched.
+   *
+   * @param {Function} actionCreator
+   * @param {Function} handler
+   */
   forEvery<Payload>(
     actionCreator: ActionCreator<Payload>,
     handler: SagaHandler<State, Payload>,
   ): Saga<State, Payload>,
+
+  /**
+   * Create a new saga watcher for the latest action which was dispatched.
+   * If a saga from an previous action is still running, the saga is cancelled.
+   *
+   * @param {Function} actionCreator
+   * @param {Function} handler
+   */
   forLatest<Payload>(
     actionCreator: ActionCreator<Payload>,
     handler: SagaHandler<State, Payload>,
   ): Saga<State, Payload>,
-  sagaCompletion: () => Promise<void>,
 }
 
 type AnySaga = Saga<any, any>;
@@ -56,6 +83,5 @@ export {
   SagaHandler,
   Saga,
   AnySaga,
-  Effect,
   SagaEnvironment,
 }
