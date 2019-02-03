@@ -1,18 +1,16 @@
-import { Action } from 'typescript-fsa';
-import { isType, ActionCreator } from 'typescript-fsa';
+import { isType } from 'typescript-fsa';
 
 import { CancellationToken } from './CancellationToken';
 import { Environment } from './environment';
-import { AnySaga, Saga, SagaMiddleware, SagaHandler } from './types';
+import { AnySaga, SagaMiddleware } from './types';
 
-export function createMiddleware<State, Actions extends Action<any>>(sagas: AnySaga[]): SagaMiddleware {
+export function createMiddleware<State>(sagas: AnySaga[]): SagaMiddleware<State> {
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
+  const sagaPromises = new Map<number, Promise<void>>();
+  let counter = 0;
 
   return {
-    forEvery<Payload>(
-      actionCreator: ActionCreator<Payload>,
-      handler: SagaHandler<State, Actions, Payload>,
-    ): Saga<State, Actions, Payload> {
+    forEvery(actionCreator, handler) {
       return {
         type: 'every',
         actionCreator,
@@ -20,10 +18,7 @@ export function createMiddleware<State, Actions extends Action<any>>(sagas: AnyS
       };
     },
 
-    forLatest<Payload>(
-      actionCreator: ActionCreator<Payload>,
-      handler: SagaHandler<State, Actions, Payload>,
-    ): Saga<State, Actions, Payload> {
+    forLatest(actionCreator, handler) {
       return {
         type: 'latest',
         actionCreator,
@@ -31,7 +26,11 @@ export function createMiddleware<State, Actions extends Action<any>>(sagas: AnyS
       };
     },
 
-    middleware: (api) => (next) => (action) => {
+    async sagaCompletion() {
+      await Promise.all(sagaPromises.values());
+    },
+
+    middleware: api => next => action => {
       next(action);
 
       for (const saga of sagas) {
@@ -47,16 +46,15 @@ export function createMiddleware<State, Actions extends Action<any>>(sagas: AnyS
           const cancellationToken = new CancellationToken();
           cancellationTokens.set(saga, cancellationToken);
 
-          const env = new Environment(
-            api,
-            cancellationToken,
-          );
+          const env = new Environment(api, cancellationToken);
+          const index = counter++;
+          const promise = saga.handler(env, action.payload);
 
-          try {
-            saga.handler(env, action.payload)
-          } catch (error) {
+          sagaPromises.set(index, promise);
 
-          }
+          promise.finally(() => {
+            sagaPromises.delete(index);
+          });
         }
       }
     },

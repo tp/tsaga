@@ -25,12 +25,12 @@ interface Provider<Value, Args extends any[]> {
   value: Value,
 }
 
-class TestEnvironment<State, Actions extends Action<any>> implements SagaEnvironment<State, Actions> {
+class TestEnvironment<State> implements SagaEnvironment<State> {
   private providers: Provider<any, any>[];
 
-  private readonly store: Store<State, Actions> | null = null;
+  private readonly store: Store<State> | null = null;
 
-  constructor(providers: Provider<any, any>[], store?: Store<State, Actions>) {
+  constructor(providers: Provider<any, any>[], store?: Store<State>) {
     this.providers = providers;
 
     if (store) {
@@ -65,7 +65,7 @@ class TestEnvironment<State, Actions extends Action<any>> implements SagaEnviron
     throw new SelectError('Either provide a reducer, state or mock all of the select calls');
   }
 
-  public dispatch(action: Actions) {
+  public dispatch(action: Action<any>) {
     if (this.store !== null) {
       this.store.dispatch(action);
     }
@@ -91,8 +91,8 @@ class TestEnvironment<State, Actions extends Action<any>> implements SagaEnviron
   }
 }
 
-class SagaTest<State, Actions extends Action<any>, Payload> {
-  private readonly saga: Saga<State, Actions, Payload>;
+class SagaTest<State, Payload> {
+  private readonly saga: Saga<State, Payload>;
 
   private readonly payload: Payload;
 
@@ -100,11 +100,11 @@ class SagaTest<State, Actions extends Action<any>, Payload> {
 
   private expectations: Expectation[] = [];
 
-  private store?: Store<State, Actions>;
+  private store?: Store<State>;
 
   private resultingState?: State;
 
-  constructor(saga: Saga<any, any, Payload>, payload: Payload) {
+  constructor(saga: Saga<State, Payload>, payload: Payload) {
     this.saga = saga;
     this.payload = payload;
   }
@@ -159,7 +159,7 @@ class SagaTest<State, Actions extends Action<any>, Payload> {
     return this;
   }
 
-  withReducer(reducer: Reducer<State, Actions>, initialState: DeepPartial<State>) {
+  withReducer(reducer: Reducer<State>, initialState: DeepPartial<State>) {
     this.store = createStore(reducer, initialState);
 
     return this;
@@ -200,6 +200,6 @@ class SagaTest<State, Actions extends Action<any>, Payload> {
   }
 }
 
-function createSagaTest<State, Actions extends Action<any>, Payload>(saga: Saga<State, Actions, Payload>, payload: Payload) {
-  return new SagaTest(saga, payload);
+function createSagaTest<State, Payload>(saga: Saga<State, Payload>, payload: Payload) {
+  return new SagaTest<State, Payload>(saga, payload);
 }
