@@ -20,77 +20,55 @@ type Expectation = CallExpectation<any, any> | DispatchExpectation<any>;
 
 interface Provider<Value, Args extends any[]> {
   type: 'call' | 'select';
-  args: Args | null;
   fn: (...args: Args) => Value;
   value: Value;
 }
 
-class TestEnvironment<State> implements SagaEnvironment<State> {
-  private providers: Provider<any, any>[];
+function createTestEnvironment<State>(
+  providers: Provider<any, any>[],
+  store: Store<State> | null = null,
+): SagaEnvironment<State> {
+  return {
+    select(selector, ...args) {
+      const provider = providers.find(
+        provider => provider.type === 'select' && provider.fn === selector,
+      );
 
-  private readonly store: Store<State> | null = null;
-
-  constructor(providers: Provider<any, any>[], store?: Store<State>) {
-    this.providers = providers;
-
-    if (store) {
-      this.store = store;
-    }
-  }
-
-  public select<Return, Args extends any[]>(
-    selector: (state: State, ...args: Args) => Return,
-    ...args: Args
-  ) {
-    const provider = this.providers.find(provider => {
-      if (provider.type !== 'select' || provider.fn !== selector) {
-        return false;
+      if (provider) {
+        return typeof provider.value === 'function'
+          ? provider.value(...args)
+          : provider.value;
       }
 
-      if (provider.args === null) {
-        return true;
+      if (store !== null) {
+        return selector(store.getState(), ...args);
       }
 
-      return deepEqual(args, provider.args);
-    });
+      throw new SelectError(
+        'Either provide a reducer, state or mock all of the select calls',
+      );
+    },
 
-    if (provider) {
-      return provider.value;
-    }
+    dispatch(action: Action<any>) {
+      if (store !== null) {
+        store.dispatch(action);
+      }
+    },
 
-    if (this.store !== null) {
-      return selector(this.store.getState(), ...args);
-    }
+    async call(fn, ...args) {
+      const provider = providers.find(
+        provider => provider.type === 'call' && provider.fn === fn,
+      );
 
-    throw new SelectError(
-      'Either provide a reducer, state or mock all of the select calls',
-    );
-  }
-
-  public dispatch(action: Action<any>) {
-    if (this.store !== null) {
-      this.store.dispatch(action);
-    }
-  }
-
-  public async call<Return, Args extends any[]>(
-    fn: (...args: Args) => Return,
-    ...args: Args
-  ) {
-    const provider = this.providers.find(provider => {
-      if (provider.type !== 'call' || provider.fn !== fn) {
-        return false;
+      if (provider) {
+        return typeof provider.value === 'function'
+          ? provider.value(...args)
+          : provider.value;
       }
 
-      if (provider.args === null) {
-        return true;
-      }
-
-      return deepEqual(args, provider.args);
-    });
-
-    return provider ? provider.value : fn(...args);
-  }
+      return fn(...args);
+    },
+  };
 }
 
 class SagaTest<State, Payload> {
@@ -111,31 +89,27 @@ class SagaTest<State, Payload> {
     this.payload = payload;
   }
 
-  withSelect<Value, Args extends any[]>(
-    matcher:
-      | ((state: any, ...args: Args) => Value)
-      | [(state: any, ...args: Args) => Value, ...Args],
-    value: Value,
+  withSelect<Return, Args extends any[]>(
+    fn: (state: State, ...args: Args) => Return,
+    value: Return | ((...args: Args) => Return),
   ) {
     this.providers.push({
       value,
+      fn,
       type: 'select',
-      fn: Array.isArray(matcher) ? matcher[0] : matcher,
-      args: Array.isArray(matcher) ? matcher.slice(1) : null,
     });
 
     return this;
   }
 
-  withCall<Value, Args extends any[]>(
-    matcher: ((...args: Args) => Value) | [(...args: Args) => Value, ...Args],
-    value: Value,
+  withCall<Return, Args extends any[]>(
+    fn: (...args: Args) => Return,
+    value: Return | ((...args: Args) => Return),
   ) {
     this.providers.push({
       value,
+      fn,
       type: 'call',
-      fn: Array.isArray(matcher) ? matcher[0] : matcher,
-      args: Array.isArray(matcher) ? matcher.slice(1) : null,
     });
 
     return this;
@@ -182,7 +156,7 @@ class SagaTest<State, Payload> {
   }
 
   async run() {
-    const env = new TestEnvironment(this.providers, this.store);
+    const env = createTestEnvironment(this.providers, this.store);
 
     await this.saga.handler(env, this.payload);
 
