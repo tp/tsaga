@@ -6,23 +6,23 @@ import deepEqual from 'fast-deep-equal';
 import { ExpectationError } from './errors/ExpectationError';
 
 interface CallExpectation<Return, Args extends any[]> {
-  type: 'call',
-  fn: (...args: Args) => Return,
-  args: Args,
+  type: 'call';
+  fn: (...args: Args) => Return;
+  args: Args;
 }
 
 interface DispatchExpectation<Payload> {
-  type: 'dispatch',
-  action: Action<Payload>,
+  type: 'dispatch';
+  action: Action<Payload>;
 }
 
 type Expectation = CallExpectation<any, any> | DispatchExpectation<any>;
 
 interface Provider<Value, Args extends any[]> {
-  type: 'call' | 'select',
-  args: Args | null,
-  fn: (...args: Args) => Value,
-  value: Value,
+  type: 'call' | 'select';
+  args: Args | null;
+  fn: (...args: Args) => Value;
+  value: Value;
 }
 
 class TestEnvironment<State> implements SagaEnvironment<State> {
@@ -62,7 +62,9 @@ class TestEnvironment<State> implements SagaEnvironment<State> {
       return selector(this.store.getState(), ...args);
     }
 
-    throw new SelectError('Either provide a reducer, state or mock all of the select calls');
+    throw new SelectError(
+      'Either provide a reducer, state or mock all of the select calls',
+    );
   }
 
   public dispatch(action: Action<any>) {
@@ -110,7 +112,9 @@ class SagaTest<State, Payload> {
   }
 
   withSelect<Value, Args extends any[]>(
-    matcher: ((state: any, ...args: Args) => Value) | [(state: any, ...args: Args) => Value, ...Args],
+    matcher:
+      | ((state: any, ...args: Args) => Value)
+      | [(state: any, ...args: Args) => Value, ...Args],
     value: Value,
   ) {
     this.providers.push({
@@ -200,6 +204,9 @@ class SagaTest<State, Payload> {
   }
 }
 
-function createSagaTest<State, Payload>(saga: Saga<State, Payload>, payload: Payload) {
+function createSagaTest<State, Payload>(
+  saga: Saga<State, Payload>,
+  payload: Payload,
+) {
   return new SagaTest<State, Payload>(saga, payload);
 }

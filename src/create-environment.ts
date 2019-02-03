@@ -33,7 +33,6 @@ function createSagaEnvironment<State>(
       return selector(store.getState(), ...args);
     },
   };
-
 }
 
 export { createSagaEnvironment };

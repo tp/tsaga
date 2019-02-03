@@ -29,7 +29,6 @@ interface SagaEnvironment<State> {
   ): Return;
 }
 
-
 type SagaHandler<State, Payload> = (
   env: SagaEnvironment<State>,
   payload: Payload,
@@ -45,12 +44,12 @@ interface SagaMiddleware<State> {
   /**
    * The middleware to pass to reduxs createStore function.
    */
-  middleware: Middleware,
+  middleware: Middleware;
 
   /**
    * Wait for the current sagas to complete.
    */
-  sagaCompletion(): Promise<void>,
+  sagaCompletion(): Promise<void>;
 
   /**
    * Create a new saga watcher for every action that is being dispatched.
@@ -61,7 +60,7 @@ interface SagaMiddleware<State> {
   forEvery<Payload>(
     actionCreator: ActionCreator<Payload>,
     handler: SagaHandler<State, Payload>,
-  ): Saga<State, Payload>,
+  ): Saga<State, Payload>;
 
   /**
    * Create a new saga watcher for the latest action which was dispatched.
@@ -73,15 +72,9 @@ interface SagaMiddleware<State> {
   forLatest<Payload>(
     actionCreator: ActionCreator<Payload>,
     handler: SagaHandler<State, Payload>,
-  ): Saga<State, Payload>,
+  ): Saga<State, Payload>;
 }
 
 type AnySaga = Saga<any, any>;
 
-export {
-  SagaMiddleware,
-  SagaHandler,
-  Saga,
-  AnySaga,
-  SagaEnvironment,
-}
+export { SagaMiddleware, SagaHandler, Saga, AnySaga, SagaEnvironment };

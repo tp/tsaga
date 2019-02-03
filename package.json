@@ -21,7 +21,8 @@
     "watch:tsc": "tsc --noEmit --watch",
     "watch:jest": "jest --watchAll",
     "lint": "tslint -c tslint.json --project .",
-    "build": "tsc"
+    "build": "tsc",
+    "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
     "fast-deep-equal": "^2.0.1",

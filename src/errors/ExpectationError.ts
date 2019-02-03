@@ -1,9 +1,1 @@
-export class ExpectationError extends Error {
-  constructor() {
-    super();
-  }
-
-  toString() {
-
-  }
-}
+export class ExpectationError extends Error {}
