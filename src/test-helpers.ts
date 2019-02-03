@@ -1,28 +1,9 @@
-import { Saga, SagaEnvironment } from './types';
+import { Saga, SagaEnvironment, Provider, Expectation } from './types';
 import { SelectError } from './errors/SelectError';
 import { createStore, Store, DeepPartial, Reducer } from 'redux';
 import { Action } from 'typescript-fsa';
 import deepEqual from 'fast-deep-equal';
 import { ExpectationError } from './errors/ExpectationError';
-
-interface CallExpectation<Return, Args extends any[]> {
-  type: 'call';
-  fn: (...args: Args) => Return;
-  args: Args;
-}
-
-interface DispatchExpectation<Payload> {
-  type: 'dispatch';
-  action: Action<Payload>;
-}
-
-type Expectation = CallExpectation<any, any> | DispatchExpectation<any>;
-
-interface Provider<Value, Args extends any[]> {
-  type: 'call' | 'select';
-  fn: (...args: Args) => Value;
-  value: Value;
-}
 
 function createTestEnvironment<State>(
   providers: Provider<any, any>[],

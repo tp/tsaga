@@ -2,10 +2,11 @@ import { isType } from 'typescript-fsa';
 
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './create-environment';
-import { AnySaga, SagaMiddleware } from './types';
+import { AnySaga, SagaMiddleware, SagaMiddlewareOptions } from './types';
 
 export function createMiddleware<State>(
   sagas: AnySaga[],
+  options: SagaMiddlewareOptions,
 ): SagaMiddleware<State> {
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
   const sagaPromises = new Map<number, Promise<void>>();
@@ -54,9 +55,11 @@ export function createMiddleware<State>(
 
           sagaPromises.set(index, promise);
 
-          promise.finally(() => {
-            sagaPromises.delete(index);
-          });
+          promise
+            .catch(error => options.onError(error))
+            .finally(() => {
+              sagaPromises.delete(index);
+            });
         }
       }
     },

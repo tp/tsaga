@@ -40,6 +40,10 @@ interface Saga<State, Payload> {
   type: 'every' | 'latest';
 }
 
+interface SagaMiddlewareOptions {
+  onError(error: Error): void;
+}
+
 interface SagaMiddleware<State> {
   /**
    * The middleware to pass to reduxs createStore function.
@@ -77,4 +81,34 @@ interface SagaMiddleware<State> {
 
 type AnySaga = Saga<any, any>;
 
-export { SagaMiddleware, SagaHandler, Saga, AnySaga, SagaEnvironment };
+interface CallExpectation<Return, Args extends any[]> {
+  type: 'call';
+  fn(...args: Args): Return;
+  args: Args;
+}
+
+interface DispatchExpectation<Payload> {
+  type: 'dispatch';
+  action: Action<Payload>;
+}
+
+type Expectation = CallExpectation<any, any> | DispatchExpectation<any>;
+
+interface Provider<Return, Args extends any[]> {
+  type: 'call' | 'select';
+  fn(...args: Args): Return;
+  value: Return | ((...args: Args) => Return);
+}
+
+export {
+  SagaMiddleware,
+  SagaMiddlewareOptions,
+  SagaHandler,
+  Saga,
+  AnySaga,
+  SagaEnvironment,
+  CallExpectation,
+  Expectation,
+  DispatchExpectation,
+  Provider,
+};
