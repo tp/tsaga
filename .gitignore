@@ -1,2 +1,3 @@
-compiled/
+lib/
+.idea/
 node_modules/
