@@ -1,20 +1,24 @@
-import { Store, Middleware } from 'redux';
-import actionCreatorFactory, { isType, ActionCreator, Action as FSAAction } from 'typescript-fsa';
-import { Action } from './types';
-import { Environment } from './environment';
+import { Middleware } from 'redux';
+import { Action as FSAAction, ActionCreator, isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
+import { Environment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
+import { Action } from './types';
 
-type Saga<StateT, ActionT extends Action, Payload> = {
+export { Task, Effect } from './environment';
+export { Action } from './types';
+export { Environment };
+
+export interface Saga<StateT, ActionT extends Action, Payload> {
   actionCreator: ActionCreator<Payload>;
   saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>;
   type: 'every' | 'latest';
-};
+}
 
-export function createTypedForEvery<StateT, ActionT extends Action>(): (<Payload>(
+export function createTypedForEvery<StateT, ActionT extends Action>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
   saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>,
-) => Saga<StateT, ActionT, Payload>) {
+) => Saga<StateT, ActionT, Payload> {
   return (actionCreator, saga) => {
     return {
       actionCreator,
@@ -24,10 +28,10 @@ export function createTypedForEvery<StateT, ActionT extends Action>(): (<Payload
   };
 }
 
-export function createTypedForLatest<StateT, ActionT extends Action>(): (<Payload>(
+export function createTypedForLatest<StateT, ActionT extends Action>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
   saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>,
-) => Saga<StateT, ActionT, Payload>) {
+) => Saga<StateT, ActionT, Payload> {
   return (actionCreator, saga) => {
     return {
       actionCreator,
@@ -65,7 +69,7 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
             }
 
             const context = new Environment(
-              api as any /* subscribe is missing, but that's fine for now */,
+              api as any /* TODO: subscribe is missing, but that's fine for now */,
               cancellationToken,
             );
             // console.error(`action matches expected creator`, action, `running saga`);

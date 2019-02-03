@@ -7,6 +7,6 @@ import { watchForUserSelectToLoad, watchForUserSelectorToCountIfNotChangedWithin
 // Know the store here already? Or add that later?
 export const forEvery = createTypedForEvery<AppState, Action>();
 export const forLatest = createTypedForLatest<AppState, Action>();
-export type OmsEnv = Environment<AppState, Action>;
+export type AppEnv = Environment<AppState, Action>;
 
 export const sagas = [watchForUserSelectToLoad, watchForUserSelectorToCountIfNotChangedWithing3s];
