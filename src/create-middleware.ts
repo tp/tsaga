@@ -6,7 +6,7 @@ import { AnySaga, SagaMiddleware, SagaMiddlewareOptions } from './types';
 
 export function createMiddleware<State>(
   sagas: AnySaga[],
-  options: SagaMiddlewareOptions,
+  options: SagaMiddlewareOptions = {},
 ): SagaMiddleware<State> {
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
   const sagaPromises = new Map<number, Promise<void>>();
@@ -56,7 +56,7 @@ export function createMiddleware<State>(
           sagaPromises.set(index, promise);
 
           promise
-            .catch(error => options.onError(error))
+            .catch(error => options.onError && options.onError(error))
             .finally(() => {
               sagaPromises.delete(index);
             });

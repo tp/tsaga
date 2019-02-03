@@ -41,7 +41,7 @@ interface Saga<State, Payload> {
 }
 
 interface SagaMiddlewareOptions {
-  onError(error: Error): void;
+  onError?(error: Error): void;
 }
 
 interface SagaMiddleware<State> {
