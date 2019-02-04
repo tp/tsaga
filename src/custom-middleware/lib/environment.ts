@@ -69,7 +69,7 @@ export interface Task<T> {
   cancel: () => void;
 }
 
-export function waitFor<Payload>(actionCreator: ActionCreator<Payload>): Effect<FsaAction<Payload>, any> {
+export function waitFor<Payload>(actionCreator: ActionCreator<Payload>): Effect<Promise<FsaAction<Payload>>, any> {
   return {
     run: (env) => {
       return env.__INTERNAL__waitForMessage(actionCreator);

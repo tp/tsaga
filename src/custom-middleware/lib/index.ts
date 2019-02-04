@@ -47,28 +47,28 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
   // TODO: Remove completed sagas from this (currently leaks all results)
   const sagaPromises: any = [];
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
-  const awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
+  let awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
 
   function waitForMessage<Payload>(actionCreator: ActionCreator<Payload>): Promise<FSAAction<Payload>> {
+    console.error(`waitForMessage called`);
+
     return new Promise((resolve, reject) => {
       awaitingMessages.push({ actionCreator: actionCreator, promiseResolve: resolve });
+      console.error(`awaitingMessages`, awaitingMessages);
     });
   }
 
   const middleWare: Middleware = (api) => {
     return function next(next) {
       return function(action) {
-        console.error(`action`, action, `state`, api.getState());
-
         next(action);
 
-        for (let i = awaitingMessages.length - 1; i--; i >= 0) {
-          const config = awaitingMessages[i];
+        for (const config of awaitingMessages) {
           if (isType(action, config.actionCreator)) {
             config.promiseResolve(action);
-            awaitingMessages.splice(i, 1);
           }
         }
+        awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
 
         for (const saga of sagas) {
           if (isType(action, saga.actionCreator)) {

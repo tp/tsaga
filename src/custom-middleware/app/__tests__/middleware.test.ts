@@ -1,15 +1,16 @@
 import { createStore, applyMiddleware } from 'redux';
 import * as nock from 'nock';
-import { tsagaReduxMiddleware } from '../../lib';
+import { tsagaReduxMiddleware, waitFor } from '../../lib';
 import {
   watchForUserSelectToLoad,
   watchForUserSelectorToCountIfNotChangedWithing3s,
   increaseCounter,
 } from '../sagas/user-sagas';
 import { userReducer } from '../reducers';
-import { userSelected } from '../actions';
+import { userSelected, setCount } from '../actions';
 import { testSaga, calls } from '../../lib/testHelpers';
 import { sleep } from '../app-library';
+import { forLatest } from '../sagas';
 
 nock.disableNetConnect();
 
