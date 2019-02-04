@@ -1,4 +1,7 @@
 /**
  * library
  */
-export interface Action { type: string; payload: any }
+export interface Action<T = any> {
+  type: string;
+  payload: T;
+}

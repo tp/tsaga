@@ -1,6 +1,6 @@
 import { Selector } from 'reselect';
 import { AnySaga } from '.';
-import { Environment, Effect, EffectCreator } from './environment';
+import { Environment, Effect, EffectCreator, Reader } from './environment';
 import { deepStrictEqual } from 'assert';
 import { Action } from './types';
 
@@ -14,14 +14,16 @@ import { Action } from './types';
 // TODO: Affordances for effects and effect creators
 // TODO: Do we need plain effect in here? Or should always creators be passed?
 // Otherwise the call-site could be written as either `run(f, x)` or `run(f(x))`…
-export function runs<T extends (...args: any[]) => any>(f: T): ValueMockBuilder<ReturnType<T>> {
+export function runs<R, T extends (...args: any[]) => R>(
+  f: T,
+): ValueMockBuilder<R extends Reader<any, any, infer U> ? (U extends void ? void : U) : R> {
   return {
-    receiving: (value): ValueMock<ReturnType<T>> => {
+    receiving: (value: any): ValueMock<R extends Reader<any, any, infer U> ? U : R> => {
       return {
         type: 'call',
         func: f,
-        value,
-      };
+        value: value as any,
+      } as any;
     },
   };
 }
@@ -89,7 +91,8 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                   let state = reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE' }); // TODO: Or accept initial state?
 
                   const testContext: InterfaceOf<Environment<any, Action>> = {
-                    run: (f: ((...args: any[]) => any) | Effect<any, any>) => {
+                    run: (f: any) => {
+                      // ((...args: any[]) => any) | Effect<any, any>
                       for (const effect of effects) {
                         if (effect.type === 'call' && effect.func === f) {
                           return effect.value;

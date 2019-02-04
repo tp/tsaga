@@ -2,7 +2,7 @@ import { forEvery, forLatest, AppEnv } from '../sagas';
 import { userSelected, userLoaded, setCount } from '../actions';
 import { getSelectedUserId, getUserById, getCount } from '../selectors';
 import { loadUser, sleep } from '../app-library';
-import { Effect, Task } from '../../lib/environment';
+import { Effect, Task, withEnv } from '../../lib/environment';
 
 /**
  * consumer
@@ -39,13 +39,13 @@ export const watchForUserSelectToLoad = forLatest(userSelected, async ({ dispatc
 //   export const watchForUserSelectLatest = forLatest(userSelected, watchForUserSelect.saga);
 //
 
-export function increaseCounter({ dispatch, select, run }: AppEnv) {
+export const increaseCounter = withEnv(({ dispatch, select, run }: AppEnv) => {
   const count = select(getCount);
   console.error(`about to set new count:`, count + 1);
 
   dispatch(setCount({ count: count + 1 }));
   console.error(`count set`, select(getCount));
-}
+});
 
 export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(
   userSelected,
@@ -58,17 +58,17 @@ export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(
 
     console.error(`sleep done`);
 
-    await run(withEnv(increaseCounter));
+    await run(increaseCounter);
   },
 );
 
-export function withEnv<T, P extends any[]>(f: (env: AppEnv, ...args: P) => T, ...args: P): Effect<T, AppEnv> {
-  return {
-    run: (env) => {
-      return f(env, ...args);
-    },
-  };
-}
+// export function withEnv<T, P extends any[]>(f: (env: AppEnv, ...args: P) => T, ...args: P): Effect<T, AppEnv> {
+//   return {
+//     run: (env) => {
+//       return f(env, ...args);
+//     },
+//   };
+// }
 
 export function forkEnv<T, P extends any[]>(f: (env: AppEnv, ...args: P) => T, ...args: P): Effect<Task<T>, AppEnv> {
   return {

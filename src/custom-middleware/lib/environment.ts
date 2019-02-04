@@ -4,6 +4,7 @@ import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
 import { ActionCreator, Action as FsaAction } from 'typescript-fsa';
 import { ETIME } from 'constants';
+import { deepStrictEqual } from 'assert';
 
 export class Environment<StateT, ActionT extends Action> {
   constructor(
@@ -48,21 +49,33 @@ export class Environment<StateT, ActionT extends Action> {
     return selector(this.store.getState(), ...args);
   };
 
-  // public run<T, P extends any[]>(f: (...params: P) => Effect<T, any>, ...params: P): T;
-
-  public run<T, P extends any[]>(f: (...params: P) => T, ...params: P): T extends Effect<infer EffT, any> ? EffT : T;
-  public run<T>(effect: Effect<T, this>): T;
-  public run<T>(first: Function | Effect<T, this>, ...rest: any[]): T {
-    if (typeof first === 'function') {
-      const res = first(...rest);
-      if ((res as any).run) {
-        return (res as any).run(this);
-      } else {
-        return res;
-      }
+  // public run<T, P extends any[]>(
+  //   f: (...params: P) => T,
+  //   ...params: P
+  // ): T extends Reader<Environment<StateT, ActionT>, P, infer U> ? U : T {
+  public run<T, P extends any[]>(
+    f: (...params: P) => T,
+    ...params: P
+  ): T extends Reader<Environment<StateT, ActionT>, P, infer U> ? U : T;
+  public run<T, P extends any[]>(r: Reader<any, any, T>, ...params: P): T;
+  public run<T, P extends any[]>(
+    f: any /* or Reader */,
+    ...params: P
+  ): T extends Reader<Environment<StateT, ActionT>, P, infer U> ? U : T {
+    if (this.cancellationToken && this.cancellationToken.canceled) {
+      throw new SagaCancelledError(`Saga has been cancelled`);
     }
 
-    return first.run(this);
+    if (f instanceof Reader) {
+      return f.run(this);
+    }
+
+    const result = f(...params);
+    if (result instanceof Reader) {
+      return result.run(this);
+    } else {
+      return result as any; // TODO: TS knows that `result` is `T`, but doesn't accept it for the return signature. Why?;
+    }
   }
 
   public __INTERNAL__waitForMessage = <Payload>(actionCreator: ActionCreator<Payload>): Promise<FsaAction<Payload>> => {
@@ -87,10 +100,38 @@ export interface Task<T> {
   cancel: () => void;
 }
 
-export function waitFor<Payload>(actionCreator: ActionCreator<Payload>): Effect<Promise<FsaAction<Payload>>, any> {
-  return {
-    run: (env) => {
-      return env.__INTERNAL__waitForMessage(actionCreator);
-    },
+export function waitFor<Payload>(actionCreator: ActionCreator<Payload>): Reader<any, any, Action<Payload>> {
+  // TODO: Creating a unique function here will make it impossible to mock
+  return new Reader((env) => {
+    return env.__INTERNAL__waitForMessage(actionCreator);
+  });
+}
+
+export class Reader<Env, P extends any[], T> {
+  readonly args: P;
+
+  constructor(private readonly f: (env: Env, ...args: P) => T, ...args: P) {
+    this.args = args;
+  }
+
+  public run = (env: Env): T => {
+    return this.f(env, ...this.args);
+  };
+
+  public sameFunctionAndParams = (otherReader: Reader<any, any, any>) => {
+    try {
+      return this.f === otherReader.f && deepStrictEqual(this.args, otherReader.args);
+    } catch (e) {
+      return false;
+    }
+  };
+}
+
+// TODO: Do we need a `ReaderBuilder` type so we now when to invoke it to compare in tests?
+export function withEnv<T, P extends any[], Env extends Environment<any, any> = never>(
+  f: (env: Env, ...args: P) => T,
+): { (...args: P): Reader<Env, P, T> } {
+  return (...args: P) => {
+    return new Reader(f, ...args);
   };
 }
