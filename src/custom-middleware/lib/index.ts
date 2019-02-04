@@ -5,7 +5,7 @@ import { Environment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
 
-export { Task, Effect, EffectCreator, EffectCreatorSymbol, waitFor } from './environment';
+export { Task } from './environment';
 export { Action } from './types';
 export { Environment };
 export { testSaga, runs, selects } from './testHelpers';

@@ -1,6 +1,6 @@
 import { createStore, applyMiddleware } from 'redux';
 import * as nock from 'nock';
-import { tsagaReduxMiddleware, waitFor } from '../../lib';
+import { tsagaReduxMiddleware } from '../../lib';
 import { userReducer } from '../reducers';
 import { userSelected, setCount } from '../actions';
 import { forLatest } from '../sagas';
@@ -8,12 +8,10 @@ import { forLatest } from '../sagas';
 nock.disableNetConnect();
 
 test('waitFor functionality test', async () => {
-  const waitForSaga = forLatest(userSelected, async ({ dispatch, select, run }, action) => {
+  const waitForSaga = forLatest(userSelected, async ({ dispatch, select, run, take }, action) => {
     console.error(`waitfor saga started`);
 
-    const {
-      payload: { count },
-    } = await run(waitFor(setCount));
+    const { count } = await take(setCount);
 
     dispatch(setCount({ count: count + 5 }));
   });

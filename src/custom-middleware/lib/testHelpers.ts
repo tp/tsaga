@@ -1,6 +1,6 @@
 import { Selector } from 'reselect';
 import { AnySaga } from '.';
-import { Environment, Effect, EffectCreator, Reader } from './environment';
+import { Environment } from './environment';
 import { deepStrictEqual } from 'assert';
 import { Action } from './types';
 
@@ -14,16 +14,30 @@ import { Action } from './types';
 // TODO: Affordances for effects and effect creators
 // TODO: Do we need plain effect in here? Or should always creators be passed?
 // Otherwise the call-site could be written as either `run(f, x)` or `run(f(x))`…
-export function runs<R, T extends (...args: any[]) => R>(
-  f: T,
-): ValueMockBuilder<R extends Reader<any, any, infer U> ? (U extends void ? void : U) : R> {
+export function runs<P extends any[], T>(f: (...args: P) => T): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
+  // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
   return {
-    receiving: (value: any): ValueMock<R extends Reader<any, any, infer U> ? U : R> => {
+    receiving: (value) => {
       return {
         type: 'call',
         func: f,
-        value: value as any,
-      } as any;
+        value: value,
+      };
+    },
+  };
+}
+
+export function spawns<P extends any[], T>(
+  f: (env: Environment<any, any>, ...args: P) => T,
+): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
+  // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
+  return {
+    receiving: (value) => {
+      return {
+        type: 'spawn',
+        func: f,
+        value: value,
+      };
     },
   };
 }
@@ -34,7 +48,19 @@ export function selects<T extends (...args: any[]) => any>(f: T): ValueMockBuild
   return {
     receiving: (value): ValueMock<ReturnType<T>> => {
       return {
-        type: 'call',
+        type: 'select',
+        func: f,
+        value,
+      };
+    },
+  };
+}
+
+export function forks<T extends (...args: any[]) => any>(f: T): ValueMockBuilder<ReturnType<T>> {
+  return {
+    receiving: (value): ValueMock<ReturnType<T>> => {
+      return {
+        type: 'select',
         func: f,
         value,
       };
@@ -47,7 +73,7 @@ type ValueMockBuilder<T> = {
 };
 
 type ValueMock<T> = {
-  type: 'select' | 'call';
+  type: 'select' | 'call' | 'spawn' | 'fork';
   func: Function;
   value: T;
 };
@@ -91,38 +117,61 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                   let state = reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE' }); // TODO: Or accept initial state?
 
                   const testContext: InterfaceOf<Environment<any, Action>> = {
-                    run: (f: any) => {
+                    run: (f: Function, ...args: any[]) => {
                       // ((...args: any[]) => any) | Effect<any, any>
                       for (const effect of effects) {
-                        if (effect.type === 'call' && effect.func === f) {
-                          return effect.value;
-                        } else if ((f as EffectCreator<any, any, any>).wrappedFunction === effect.func) {
+                        if (effect.type === 'call' && effect.func === f /* TODO: & check args */) {
                           return effect.value;
                         }
                       }
 
+                      console.error(effects);
+
                       // TODO: Should we expect a mock for all, or just call through?
-                      throw new Error(`No mock value provided for run(${(f as any).name || 'unnamed function'})`);
+                      throw new Error(`No mock value provided for run(${f.name || 'unnamed function'})`);
                     },
-                    select: (selector: any, ...args: any[]) => {
+                    select: (selector: Function, ...args: any[]) => {
                       for (const effect of effects) {
                         if (effect.type === 'select' && effect.func === selector) {
                           return effect.value;
                         }
                       }
 
-                      throw new Error(`No mock value provided for select(${selector.name})`);
+                      console.error(`select`, effects);
+
+                      throw new Error(`No mock value provided for select(${selector.name || 'unnamed selector'})`);
                     },
                     dispatch: (action: Action) => {
                       console.log(action);
                       // TODO: Support assertions on dispatched message, or is it fine to just check the final state?
                       state = reducer(state, action);
                     },
-                    createDetachedChildEnvironment: () => {
-                      throw new Error(`Test Environment: createDetachedChildEnvironment is not implemented`);
+                    fork: (f: Function, ...args: any[]) => {
+                      // TODO: Create detached context / add cancellation to tests?
+                      for (const effect of effects) {
+                        if (effect.type === 'fork' && effect.func === f) {
+                          return effect.value;
+                        }
+                      }
+
+                      console.error(`fork: calling through`);
+
+                      return f(testContext, ...args);
+                      // throw new Error(`Not implemented: fork`);
                     },
-                    __INTERNAL__waitForMessage: () => {
-                      throw new Error(`Test Environment: waitForMessage is not implemented`);
+                    spawn: (f: Function, ...args: any[]) => {
+                      for (const effect of effects) {
+                        if (effect.type === 'spawn' && effect.func === f) {
+                          return effect.value;
+                        }
+                      }
+
+                      console.error(`spawn: calling through`);
+
+                      return f(testContext, ...args);
+                    },
+                    take: () => {
+                      throw new Error(`Not implemented: take`);
                     },
                   };
 

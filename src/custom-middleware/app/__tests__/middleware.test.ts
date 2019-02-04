@@ -1,6 +1,6 @@
 import { createStore, applyMiddleware } from 'redux';
 import * as nock from 'nock';
-import { tsagaReduxMiddleware, waitFor } from '../../lib';
+import { tsagaReduxMiddleware } from '../../lib';
 import { watchForUserSelectToLoad, watchForUserSelectorToCountIfNotChangedWithing3s } from '../sagas/user-sagas';
 import { userReducer } from '../reducers';
 import { userSelected } from '../actions';
