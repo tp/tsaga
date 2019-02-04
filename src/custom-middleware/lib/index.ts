@@ -5,9 +5,10 @@ import { Environment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
 
-export { Task, Effect, waitFor } from './environment';
+export { Task, Effect, EffectCreator, EffectCreatorSymbol, waitFor } from './environment';
 export { Action } from './types';
 export { Environment };
+export { testSaga, runs, selects } from './testHelpers';
 
 export interface Saga<StateT, ActionT extends Action, Payload> {
   actionCreator: ActionCreator<Payload>;

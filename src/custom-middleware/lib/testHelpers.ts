@@ -1,17 +1,20 @@
 import { Selector } from 'reselect';
 import { AnySaga } from '.';
-import { Environment } from './environment';
+import { Environment, Effect, EffectCreator } from './environment';
 import { deepStrictEqual } from 'assert';
+import { Action } from './types';
 
 // type SilentAssertion = {
 //   type: 'dispatch',
-
 // }
 
 // TODO: Should call provide the env implictly if the target function desires it?
 // A function without `env` should have no side effect and can just be called directly
-
-export function calls<T extends (...args: any[]) => any>(f: T): ValueMockBuilder<ReturnType<T>> {
+// TODO: Allow T to be provided for Promise<T>
+// TODO: Affordances for effects and effect creators
+// TODO: Do we need plain effect in here? Or should always creators be passed?
+// Otherwise the call-site could be written as either `run(f, x)` or `run(f(x))`…
+export function runs<T extends (...args: any[]) => any>(f: T): ValueMockBuilder<ReturnType<T>> {
   return {
     receiving: (value): ValueMock<ReturnType<T>> => {
       return {
@@ -52,7 +55,7 @@ interface SagaTest1 {
 }
 
 interface SagaTest2 {
-  which: (...effects: any[]) => SagaTestBuilder3;
+  which: (...effects: ValueMock<any>[]) => SagaTestBuilder3;
 }
 
 interface SagaTestBuilder3 {
@@ -69,6 +72,8 @@ interface SagaEnv<StateT, ActionT> {
   dispatch: (action: ActionT) => void;
 }
 
+type InterfaceOf<T> = { [P in keyof T]: T[P] };
+
 export function testSaga(saga: AnySaga): SagaTest1 {
   return {
     with: (action) => {
@@ -83,25 +88,50 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                 forReducer: async (reducer: Function) => {
                   let state = reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE' }); // TODO: Or accept initial state?
 
-                  const testContext: Environment<any, any> = {
-                    call: (f: any) => {
-                      return 0 as any;
-                    },
-                    callEnv: (f: any) => {
-                      f(testContext);
+                  const testContext: InterfaceOf<Environment<any, Action>> = {
+                    run: (f: ((...args: any[]) => any) | Effect<any, any>) => {
+                      for (const effect of effects) {
+                        if (effect.type === 'call' && effect.func === f) {
+                          return effect.value;
+                        } else if ((f as EffectCreator<any, any, any>).wrappedFunction === effect.func) {
+                          return effect.value;
+                        }
+                      }
 
-                      return 0 as any;
+                      // TODO: Should we expect a mock for all, or just call through?
+                      throw new Error(`No mock value provided for run(${(f as any).name || 'unnamed function'})`);
                     },
-                    select: () => {
-                      return 0 as any;
+                    select: (selector: any, ...args: any[]) => {
+                      for (const effect of effects) {
+                        if (effect.type === 'select' && effect.func === selector) {
+                          return effect.value;
+                        }
+                      }
+
+                      throw new Error(`No mock value provided for select(${selector.name})`);
                     },
-                    put: (action: any) => {
+                    dispatch: (action: Action) => {
                       console.log(action);
+                      // TODO: Support assertions on dispatched message, or is it fine to just check the final state?
                       state = reducer(state, action);
                     },
-                  } as any;
+                    createDetachedChildEnvironment: () => {
+                      throw new Error(`Test Environment: createDetachedChildEnvironment is not implemented`);
+                    },
+                    __INTERNAL__waitForMessage: () => {
+                      throw new Error(`Test Environment: waitForMessage is not implemented`);
+                    },
+                  };
 
-                  await saga.saga(testContext, action);
+                  await saga.saga(
+                    /**
+                     * Fine, since the outside interface is equal, it's just not of the same `class`
+                     *
+                     * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
+                     */
+                    testContext as any,
+                    action,
+                  );
 
                   deepStrictEqual(state, finalState);
 

@@ -3,6 +3,7 @@ import { CancellationToken } from './CancellationToken';
 import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
 import { ActionCreator, Action as FsaAction } from 'typescript-fsa';
+import { ETIME } from 'constants';
 
 export class Environment<StateT, ActionT extends Action> {
   constructor(
@@ -31,6 +32,8 @@ export class Environment<StateT, ActionT extends Action> {
     }
 
     // this is used for forks, to it shouldn't be cancelled when the parent is cancelled
+    // for `spawn` like behavior, the user would just create a Promise with `run`/`run(withEnv(...))` that is still attached to the main cancellation context
+    // TODO: Must `run` wrap the `Promise` (if one is returned), in order to cancel the resolve in case of cancellation?
     const cancellationToken = new CancellationToken();
     const childEnv = new Environment(this.store, this.waitForMessage, cancellationToken);
 
@@ -45,11 +48,18 @@ export class Environment<StateT, ActionT extends Action> {
     return selector(this.store.getState(), ...args);
   };
 
-  public run<T, P extends any[]>(f: (...params: P) => T, ...params: P): T;
+  // public run<T, P extends any[]>(f: (...params: P) => Effect<T, any>, ...params: P): T;
+
+  public run<T, P extends any[]>(f: (...params: P) => T, ...params: P): T extends Effect<infer EffT, any> ? EffT : T;
   public run<T>(effect: Effect<T, this>): T;
   public run<T>(first: Function | Effect<T, this>, ...rest: any[]): T {
     if (typeof first === 'function') {
-      return first(...rest);
+      const res = first(...rest);
+      if ((res as any).run) {
+        return (res as any).run(this);
+      } else {
+        return res;
+      }
     }
 
     return first.run(this);
@@ -59,6 +69,14 @@ export class Environment<StateT, ActionT extends Action> {
     return this.waitForMessage(actionCreator);
   };
 }
+
+export const EffectCreatorSymbol: unique symbol = Symbol();
+
+export type EffectCreator<P extends any[], T, Env> = {
+  (...args: P): Effect<T, Env>;
+  wrappedFunction: Function;
+  ___tagEffectCreator: typeof EffectCreatorSymbol;
+};
 
 export interface Effect<T, Env> {
   run: (env: Env) => T;

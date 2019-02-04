@@ -24,3 +24,7 @@ function () {
 
   return <div onClick={() => run(saga)}>Add to Basket</div>;
 }
+
+function run(saga, payload) {
+  return saga.actionCreator(payload)
+}
