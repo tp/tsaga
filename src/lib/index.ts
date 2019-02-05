@@ -1,5 +1,5 @@
 import { Middleware } from 'redux';
-import { Action, ActionCreator, isType } from 'typescript-fsa';
+import { ActionCreator, isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
@@ -19,12 +19,12 @@ export {
 
 export function createTypedForEvery<State>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
-  saga: (env: SagaEnvironment<State>, action: Action<Payload>) => Promise<void>,
+  saga: (env: SagaEnvironment<State>, action: Payload) => Promise<void>,
 ) => Saga<State, Payload> {
   return (actionCreator, saga) => {
     return {
       actionCreator,
-      saga,
+      innerFunction: saga,
       type: 'every',
     };
   };
@@ -32,12 +32,12 @@ export function createTypedForEvery<State>(): <Payload>(
 
 export function createTypedForLatest<State>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
-  saga: (env: SagaEnvironment<State>, action: Action<Payload>) => Promise<void>,
+  saga: (env: SagaEnvironment<State>, action: Payload) => Promise<void>,
 ) => Saga<State, Payload> {
   return (actionCreator, saga) => {
     return {
       actionCreator,
-      saga,
+      innerFunction: saga,
       type: 'latest',
     };
   };
@@ -90,7 +90,7 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
 
             sagaPromises.push(
               saga
-                .saga(context, action)
+                .innerFunction(context, action)
                 .then((e) => 'completed')
                 .catch((e) => {
                   if (e instanceof SagaCancelledError) {

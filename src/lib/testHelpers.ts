@@ -1,8 +1,5 @@
-import { Selector } from 'reselect';
-import { AnySaga } from '.';
-import { Environment } from './environment';
+import { SagaEnvironment, AnySaga } from './types';
 import { deepStrictEqual } from 'assert';
-import { Action } from './types';
 
 // type SilentAssertion = {
 //   type: 'dispatch',
@@ -28,7 +25,7 @@ export function runs<P extends any[], T>(f: (...args: P) => T): ValueMockBuilder
 }
 
 export function spawns<P extends any[], T>(
-  f: (env: Environment<any, any>, ...args: P) => T,
+  f: (env: SagaEnvironment<any>, ...args: P) => T,
 ): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
   // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
   return {
@@ -94,14 +91,6 @@ interface SagaTestBuilder4 {
   forReducer: (reducer: Function) => Promise<void>;
 }
 
-interface SagaEnv<StateT, ActionT> {
-  call: <T extends (...args: any[]) => any>(f: T) => ReturnType<T>;
-  select: <R>(s: Selector<StateT, R>) => R;
-  dispatch: (action: ActionT) => void;
-}
-
-type InterfaceOf<T> = { [P in keyof T]: T[P] };
-
 export function testSaga(saga: AnySaga): SagaTest1 {
   return {
     with: (action) => {
@@ -116,7 +105,7 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                 forReducer: async (reducer: Function) => {
                   let state = reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE' }); // TODO: Or accept initial state?
 
-                  const testContext: InterfaceOf<Environment<any, Action>> = {
+                  const testContext: SagaEnvironment<any> = {
                     run: (f: Function, ...args: any[]) => {
                       // ((...args: any[]) => any) | Effect<any, any>
                       for (const effect of effects) {
@@ -130,7 +119,7 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                       // TODO: Should we expect a mock for all, or just call through?
                       throw new Error(`No mock value provided for run(${f.name || 'unnamed function'})`);
                     },
-                    select: (selector: Function, ...args: any[]) => {
+                    select: (selector, ...args) => {
                       for (const effect of effects) {
                         if (effect.type === 'select' && effect.func === selector) {
                           return effect.value;
@@ -141,7 +130,7 @@ export function testSaga(saga: AnySaga): SagaTest1 {
 
                       throw new Error(`No mock value provided for select(${selector.name || 'unnamed selector'})`);
                     },
-                    dispatch: (action: Action) => {
+                    dispatch: (action) => {
                       console.log(action);
                       // TODO: Support assertions on dispatched message, or is it fine to just check the final state?
                       state = reducer(state, action);
@@ -175,7 +164,7 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                     },
                   };
 
-                  await saga.saga(
+                  await saga.innerFunction(
                     /**
                      * Fine, since the outside interface is equal, it's just not of the same `class`
                      *

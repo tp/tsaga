@@ -1,6 +1,5 @@
 import { AppState } from './types';
-import { isType } from 'typescript-fsa';
-import { Action } from '../lib/types';
+import { isType, Action } from 'typescript-fsa';
 import { userSelected, userLoaded, setCount } from './actions';
 
 const initialState: AppState = {
@@ -9,7 +8,7 @@ const initialState: AppState = {
   usersById: {},
 };
 
-export function userReducer(state = initialState, action: Action): AppState {
+export function userReducer(state = initialState, action: Action<any>): AppState {
   if (isType(action, userSelected)) {
     // console.error(`reducer: user selected`);
     return { ...state, selectedUser: action.payload.id };

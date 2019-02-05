@@ -184,14 +184,14 @@ export async function testSagaWithState<StateT, Payload>(
     },
   };
 
-  await saga.saga(
+  await saga.innerFunction(
     /**
      * Fine, since the outside interface is equal, it's just not of the same `class`
      *
      * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
      */
-    testContext as any,
-    { payload: initialPayload } as any,
+    testContext,
+    initialPayload,
   );
 
   deepStrictEqual(state, finalState);

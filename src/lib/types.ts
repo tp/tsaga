@@ -64,7 +64,7 @@ export interface SagaEnvironment<State> {
 
 export interface Saga<State, Payload> {
   actionCreator: ActionCreator<Payload>;
-  saga: (ctx: SagaEnvironment<State>, action: Action<Payload>) => Promise<void>;
+  innerFunction: (ctx: SagaEnvironment<State>, payload: Payload) => Promise<void>;
   type: 'every' | 'latest';
 }
 
