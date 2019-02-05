@@ -1,10 +1,9 @@
 import { Middleware } from 'redux';
 import { Action as FSAAction, ActionCreator, isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
-import { Environment } from './environment';
+import { Environment, EnvironmentType } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
-
 export { Task } from './environment';
 export { Action } from './types';
 export { Environment };
@@ -13,18 +12,18 @@ export { testSagaWithState } from './stateBasedTestHelper';
 
 export interface Saga<StateT, ActionT extends Action, Payload> {
   actionCreator: ActionCreator<Payload>;
-  saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>;
+  innerFunction: (ctx: EnvironmentType<StateT, ActionT>, action: Payload) => Promise<void>;
   type: 'every' | 'latest';
 }
 
 export function createTypedForEvery<StateT, ActionT extends Action>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
-  saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>,
+  saga: (ctx: EnvironmentType<StateT, ActionT>, action: Payload) => Promise<void>,
 ) => Saga<StateT, ActionT, Payload> {
   return (actionCreator, saga) => {
     return {
       actionCreator,
-      saga,
+      innerFunction: saga,
       type: 'every',
     };
   };
@@ -32,12 +31,12 @@ export function createTypedForEvery<StateT, ActionT extends Action>(): <Payload>
 
 export function createTypedForLatest<StateT, ActionT extends Action>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
-  saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>,
+  saga: (ctx: EnvironmentType<StateT, ActionT>, action: Payload) => Promise<void>,
 ) => Saga<StateT, ActionT, Payload> {
   return (actionCreator, saga) => {
     return {
       actionCreator,
-      saga,
+      innerFunction: saga,
       type: 'latest',
     };
   };
@@ -85,16 +84,11 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
               cancellationTokens.set(saga, cancellationToken);
             }
 
-            const context = new Environment(
-              api as any /* TODO: subscribe is missing, but that's fine for now */,
-              waitForMessage,
-              cancellationToken,
-            );
-            // console.error(`action matches expected creator`, action, `running saga`);
+            const context = new Environment(api, waitForMessage, cancellationToken);
 
             sagaPromises.push(
               saga
-                .saga(context, action)
+                .innerFunction(context, action.payload)
                 .then((e) => 'completed')
                 .catch((e) => {
                   if (e instanceof SagaCancelledError) {
@@ -111,11 +105,11 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
     };
   };
 
+  // TODO: Add support to also await forks
   const sagaCompletion = async (): Promise<void> => {
     const promises = sagaPromises.slice(0);
 
-    const res = await Promise.all(promises);
-    console.error(`res`, res);
+    await Promise.all(promises);
   };
 
   return { middleware: middleWare, sagaCompletion };

@@ -1,6 +1,6 @@
 import { Selector } from 'reselect';
 import { AnySaga, Saga } from '.';
-import { Environment } from './environment';
+import { Environment, EnvironmentType } from './environment';
 import { deepStrictEqual } from 'assert';
 import { Action } from './types';
 import { ActionCreator, isType } from 'typescript-fsa';
@@ -101,17 +101,21 @@ interface SagaEnv<StateT, ActionT> {
   dispatch: (action: ActionT) => void;
 }
 
-type InterfaceOf<T> = { [P in keyof T]: T[P] };
-
 export async function testSagaWithState<StateT, Payload>(
   saga: Saga<StateT, any, Payload>,
-  initialPayload: Payload,
+  initialAction: Action<Payload>,
   mocks: ValueMock<any>[],
   initialState: StateT | undefined,
   reducer: (state: StateT | undefined, action: Action) => StateT,
   finalState: StateT,
 ) {
+  if (!isType(initialAction, saga.actionCreator)) {
+    throw new Error(`Initial action does not match expected type`);
+  }
+
   let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
+  // TODO: Shouldn't the initial action be run through the reducers before hitting the saga?
+  // state = reducer(initialState, initialAction);
 
   let awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
 
@@ -124,7 +128,7 @@ export async function testSagaWithState<StateT, Payload>(
     });
   }
 
-  const testContext: InterfaceOf<Environment<any, Action>> = {
+  const testContext: EnvironmentType<any, Action> = {
     run: (f: Function, ...args: any[]) => {
       for (const effect of mocks) {
         if (effect.type === 'call' && effect.func === f /* TODO: & check args */) {
@@ -188,14 +192,14 @@ export async function testSagaWithState<StateT, Payload>(
     },
   };
 
-  await saga.saga(
+  await saga.innerFunction(
     /**
      * Fine, since the outside interface is equal, it's just not of the same `class`
      *
      * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
      */
-    testContext as any,
-    { payload: initialPayload } as any,
+    testContext,
+    initialAction.payload,
   );
 
   deepStrictEqual(state, finalState);

@@ -49,27 +49,28 @@ var app_library_1 = require("../app-library");
 // But then the question becomes, when is the forEvery being bound?
 // Would the reader monad pattern be better suitable? Would require type annotations on the saga (as it's not yet connected to any particular store)?
 // Also can we better match the message type to the `action` parameter, such that they are always in sync and type safe?
-exports.watchForUserSelectToLoad = sagas_1.forLatest(actions_1.userSelected, function (_a, action) {
+exports.watchForUserSelectToLoad = sagas_1.forLatest(actions_1.userSelected, function (_a, _b) {
     var dispatch = _a.dispatch, select = _a.select, run = _a.run;
+    var id = _b.id;
     return __awaiter(_this, void 0, void 0, function () {
         var currentUserId, user, user_1;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     currentUserId = select(selectors_1.getSelectedUserId);
-                    if (currentUserId !== action.payload.id) {
-                        throw new Error("State does not match expectation based on action ,\n        currentUserId = " + currentUserId + " \n\n        action.payload.id = " + action.payload.id);
+                    if (currentUserId !== id) {
+                        throw new Error("State does not match expectation based on action ,\n        currentUserId = " + currentUserId + " \n\n        action.payload.id = " + id);
                     }
-                    user = select(selectors_1.getUserById, action.payload.id);
+                    user = select(selectors_1.getUserById, id);
                     if (!!user) return [3 /*break*/, 2];
-                    return [4 /*yield*/, run(app_library_1.loadUser, action.payload.id)];
+                    return [4 /*yield*/, run(app_library_1.loadUser, id)];
                 case 1:
-                    user_1 = _b.sent();
+                    user_1 = _c.sent();
                     dispatch(actions_1.userLoaded({ user: user_1 }));
                     return [3 /*break*/, 3];
                 case 2:
                     console.log("not loading user, already present");
-                    _b.label = 3;
+                    _c.label = 3;
                 case 3: return [2 /*return*/];
             }
         });
@@ -84,7 +85,7 @@ exports.increaseCounter = function (_a) {
     dispatch(actions_1.setCount({ count: count + 1 }));
     // console.error(`count set`, select(getCount));
 };
-exports.watchForUserSelectorToCountIfNotChangedWithing3s = sagas_1.forLatest(actions_1.userSelected, function (_a, action) {
+exports.watchForUserSelectorToCountIfNotChangedWithing3s = sagas_1.forLatest(actions_1.userSelected, function (_a, payload) {
     var dispatch = _a.dispatch, select = _a.select, run = _a.run, spawn = _a.spawn;
     return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_b) {
@@ -104,4 +105,4 @@ exports.watchForUserSelectorToCountIfNotChangedWithing3s = sagas_1.forLatest(act
         });
     });
 });
-exports.watchForUserSelectorToCountImmediately = sagas_1.forEvery(actions_1.userSelected, exports.watchForUserSelectorToCountIfNotChangedWithing3s.saga);
+exports.watchForUserSelectorToCountImmediately = sagas_1.forEvery(actions_1.userSelected, exports.watchForUserSelectorToCountIfNotChangedWithing3s.innerFunction);

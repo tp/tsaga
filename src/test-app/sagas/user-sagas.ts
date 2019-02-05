@@ -13,22 +13,22 @@ import { loadUser, sleep } from '../app-library';
 // But then the question becomes, when is the forEvery being bound?
 // Would the reader monad pattern be better suitable? Would require type annotations on the saga (as it's not yet connected to any particular store)?
 // Also can we better match the message type to the `action` parameter, such that they are always in sync and type safe?
-export const watchForUserSelectToLoad = forLatest(userSelected, async ({ dispatch, select, run }, action) => {
+export const watchForUserSelectToLoad = forLatest(userSelected, async ({ dispatch, select, run }, { id }) => {
   //   console.log(`load user ${action.payload.id} if needed`);
 
   const currentUserId = select(getSelectedUserId); // Could of course use the action here, but wanting to test selector with different cardinatlities
-  if (currentUserId !== action.payload.id) {
+  if (currentUserId !== id) {
     throw new Error(
       `State does not match expectation based on action \,
         currentUserId = ${currentUserId} \n
-        action.payload.id = ${action.payload.id}`,
+        action.payload.id = ${id}`,
     );
   }
 
-  const user = select(getUserById, action.payload.id);
+  const user = select(getUserById, id);
   if (!user) {
     // console.error(`loading user`);
-    const user = await run(loadUser, action.payload.id);
+    const user = await run(loadUser, id);
     dispatch(userLoaded({ user }));
   } else {
     console.log(`not loading user, already present`);
@@ -48,7 +48,7 @@ export const increaseCounter = ({ dispatch, select, run }: AppEnv) => {
 
 export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(
   userSelected,
-  async ({ dispatch, select, run, spawn }, action) => {
+  async ({ dispatch, select, run, spawn }, payload) => {
     // console.error(env);
 
     console.error(`about to sleep`);
@@ -63,5 +63,5 @@ export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(
 
 export const watchForUserSelectorToCountImmediately = forEvery(
   userSelected,
-  watchForUserSelectorToCountIfNotChangedWithing3s.saga,
+  watchForUserSelectorToCountIfNotChangedWithing3s.innerFunction,
 );

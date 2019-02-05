@@ -4,9 +4,11 @@ import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
 import { ActionCreator, Action as FsaAction } from 'typescript-fsa';
 
+export type ReadStore<S, A extends Action> = Pick<Store<S, A>, 'dispatch' | 'getState'>;
+
 export class Environment<StateT, ActionT extends Action> {
   constructor(
-    private readonly store: Store<StateT, ActionT>,
+    private readonly store: ReadStore<StateT, ActionT>,
     private readonly waitForMessage: <Payload>(action: ActionCreator<Payload>) => Promise<FsaAction<Payload>>,
     private readonly cancellationToken?: CancellationToken,
   ) {}
@@ -76,3 +78,7 @@ export interface Task<T> {
   result: T;
   cancel: () => void;
 }
+
+type InterfaceOf<T> = { [P in keyof T]: T[P] };
+
+export type EnvironmentType<StateT, ActionT extends Action> = InterfaceOf<Environment<StateT, ActionT>>;
