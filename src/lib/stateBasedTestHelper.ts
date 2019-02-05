@@ -1,9 +1,7 @@
 import { Selector } from 'reselect';
-import { AnySaga, Saga } from '.';
-import { Environment } from './environment';
+import { SagaEnvironment, Saga, AnySaga } from './types';
 import { deepStrictEqual } from 'assert';
-import { Action } from './types';
-import { ActionCreator, isType } from 'typescript-fsa';
+import { ActionCreator, isType, Action } from 'typescript-fsa';
 
 // type SilentAssertion = {
 //   type: 'dispatch',
@@ -29,7 +27,7 @@ export function runs<P extends any[], T>(f: (...args: P) => T): ValueMockBuilder
 }
 
 export function spawns<P extends any[], T>(
-  f: (env: Environment<any, any>, ...args: P) => T,
+  f: (env: SagaEnvironment<any>, ...args: P) => T,
 ): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
   // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
   return {
@@ -101,14 +99,12 @@ interface SagaEnv<StateT, ActionT> {
   dispatch: (action: ActionT) => void;
 }
 
-type InterfaceOf<T> = { [P in keyof T]: T[P] };
-
 export async function testSagaWithState<StateT, Payload>(
-  saga: Saga<StateT, any, Payload>,
+  saga: Saga<StateT, Payload>,
   initialPayload: Payload,
   mocks: ValueMock<any>[],
   initialState: StateT | undefined,
-  reducer: (state: StateT | undefined, action: Action) => StateT,
+  reducer: (state: StateT | undefined, action: Action<any>) => StateT,
   finalState: StateT,
 ) {
   let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
@@ -124,7 +120,7 @@ export async function testSagaWithState<StateT, Payload>(
     });
   }
 
-  const testContext: InterfaceOf<Environment<any, Action>> = {
+  const testContext: SagaEnvironment<any> = {
     run: (f: Function, ...args: any[]) => {
       for (const effect of mocks) {
         if (effect.type === 'call' && effect.func === f /* TODO: & check args */) {
@@ -147,7 +143,7 @@ export async function testSagaWithState<StateT, Payload>(
 
       return selector(state, ...args);
     },
-    dispatch: (action: Action) => {
+    dispatch: (action) => {
       console.log(`test env dispatch`, action);
 
       state = reducer(state, action);

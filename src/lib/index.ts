@@ -1,26 +1,26 @@
 import { Middleware } from 'redux';
-import { Action as FSAAction, ActionCreator, isType } from 'typescript-fsa';
+import { Action, ActionCreator, isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
-import { Environment } from './environment';
+import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
-import { Action } from './types';
 
-export { Task } from './environment';
-export { Action } from './types';
-export { Environment };
+import {
+  Saga,
+  SagaEnvironment,
+  AnySaga, WaitForAction,
+} from './types';
 export { testSaga, runs, selects, forks, spawns } from './testHelpers';
 export { testSagaWithState } from './stateBasedTestHelper';
 
-export interface Saga<StateT, ActionT extends Action, Payload> {
-  actionCreator: ActionCreator<Payload>;
-  saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>;
-  type: 'every' | 'latest';
-}
+export {
+  SagaEnvironment,
+  Saga,
+};
 
-export function createTypedForEvery<StateT, ActionT extends Action>(): <Payload>(
+export function createTypedForEvery<State>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
-  saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>,
-) => Saga<StateT, ActionT, Payload> {
+  saga: (env: SagaEnvironment<State>, action: Action<Payload>) => Promise<void>,
+) => Saga<State, Payload> {
   return (actionCreator, saga) => {
     return {
       actionCreator,
@@ -30,10 +30,10 @@ export function createTypedForEvery<StateT, ActionT extends Action>(): <Payload>
   };
 }
 
-export function createTypedForLatest<StateT, ActionT extends Action>(): <Payload>(
+export function createTypedForLatest<State>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
-  saga: (ctx: Environment<StateT, ActionT>, action: FSAAction<Payload>) => Promise<void>,
-) => Saga<StateT, ActionT, Payload> {
+  saga: (env: SagaEnvironment<State>, action: Action<Payload>) => Promise<void>,
+) => Saga<State, Payload> {
   return (actionCreator, saga) => {
     return {
       actionCreator,
@@ -43,22 +43,18 @@ export function createTypedForLatest<StateT, ActionT extends Action>(): <Payload
   };
 }
 
-export type AnySaga = Saga<any, any, any>;
-
 export function tsagaReduxMiddleware(sagas: AnySaga[]) {
   // TODO: Remove completed sagas from this (currently leaks all results)
   const sagaPromises: any = [];
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
   let awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
 
-  function waitForMessage<Payload>(actionCreator: ActionCreator<Payload>): Promise<FSAAction<Payload>> {
-    console.error(`waitForMessage called`);
-
-    return new Promise((resolve, reject) => {
+  const waitForAction: WaitForAction = (actionCreator) => {
+    return new Promise((resolve) => {
       awaitingMessages.push({ actionCreator: actionCreator, promiseResolve: resolve });
       console.error(`awaitingMessages`, awaitingMessages);
     });
-  }
+  };
 
   const middleWare: Middleware = (api) => {
     return function next(next) {
@@ -85,9 +81,9 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
               cancellationTokens.set(saga, cancellationToken);
             }
 
-            const context = new Environment(
-              api as any /* TODO: subscribe is missing, but that's fine for now */,
-              waitForMessage,
+            const context = createSagaEnvironment(
+              api,
+              waitForAction,
               cancellationToken,
             );
             // console.error(`action matches expected creator`, action, `running saga`);
