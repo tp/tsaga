@@ -12,8 +12,8 @@ test('waitFor functionality test', async () => {
     dispatch(setCount({ count: newCount }));
   };
 
-  const waitForSaga = forLatest(userSelected, async ({ dispatch, select, run, spawn, fork, take }, action) => {
-    await spawn(subSaga, action.payload.id * 3);
+  const waitForSaga = forLatest(userSelected, async ({ dispatch, select, run, spawn, fork, take }, { id }) => {
+    await spawn(subSaga, id * 3);
   });
 
   const { middleware, sagaCompletion } = tsagaReduxMiddleware([waitForSaga]);

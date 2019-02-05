@@ -17,6 +17,7 @@ export {
   Saga,
 };
 
+
 export function createTypedForEvery<State>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
   saga: (env: SagaEnvironment<State>, action: Action<Payload>) => Promise<void>,
@@ -24,7 +25,7 @@ export function createTypedForEvery<State>(): <Payload>(
   return (actionCreator, saga) => {
     return {
       actionCreator,
-      saga,
+      innerFunction: saga,
       type: 'every',
     };
   };
@@ -37,7 +38,7 @@ export function createTypedForLatest<State>(): <Payload>(
   return (actionCreator, saga) => {
     return {
       actionCreator,
-      saga,
+      innerFunction: saga,
       type: 'latest',
     };
   };
@@ -90,7 +91,7 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
 
             sagaPromises.push(
               saga
-                .saga(context, action)
+                .innerFunction(context, action.payload)
                 .then((e) => 'completed')
                 .catch((e) => {
                   if (e instanceof SagaCancelledError) {
@@ -107,11 +108,11 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
     };
   };
 
+  // TODO: Add support to also await forks
   const sagaCompletion = async (): Promise<void> => {
     const promises = sagaPromises.slice(0);
 
-    const res = await Promise.all(promises);
-    console.error(`res`, res);
+    await Promise.all(promises);
   };
 
   return { middleware: middleWare, sagaCompletion };

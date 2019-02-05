@@ -53,14 +53,15 @@ test('waitFor functionality test', function () { return __awaiter(_this, void 0,
                     var dispatch = _a.dispatch, select = _a.select, run = _a.run;
                     dispatch(actions_1.setCount({ count: newCount }));
                 };
-                waitForSaga = sagas_1.forLatest(actions_1.userSelected, function (_a, action) {
+                waitForSaga = sagas_1.forLatest(actions_1.userSelected, function (_a, _b) {
                     var dispatch = _a.dispatch, select = _a.select, run = _a.run, spawn = _a.spawn, fork = _a.fork, take = _a.take;
+                    var id = _b.id;
                     return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_b) {
-                            switch (_b.label) {
-                                case 0: return [4 /*yield*/, spawn(subSaga, action.payload.id * 3)];
+                        return __generator(this, function (_c) {
+                            switch (_c.label) {
+                                case 0: return [4 /*yield*/, spawn(subSaga, id * 3)];
                                 case 1:
-                                    _b.sent();
+                                    _c.sent();
                                     return [2 /*return*/];
                             }
                         });

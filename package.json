@@ -1,6 +1,6 @@
 {
   "name": "tsaga",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Typesafe and lightweight way to write functions with asynchronous side-effects that are easily testable.",
   "main": "compiled/lib/index.js",
   "repository": "https://github.com/tp/tsaga.git",

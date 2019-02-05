@@ -175,7 +175,7 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                     },
                   };
 
-                  await saga.saga(
+                  await saga.innerFunction(
                     /**
                      * Fine, since the outside interface is equal, it's just not of the same `class`
                      *

@@ -186,7 +186,7 @@ function testSaga(saga) {
                                                         throw new Error("Not implemented: take");
                                                     },
                                                 };
-                                                return [4 /*yield*/, saga.saga(
+                                                return [4 /*yield*/, saga.innerFunction(
                                                     /**
                                                      * Fine, since the outside interface is equal, it's just not of the same `class`
                                                      *
