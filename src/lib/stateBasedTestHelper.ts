@@ -107,7 +107,13 @@ export async function testSagaWithState<StateT, Payload>(
   reducer: (state: StateT | undefined, action: Action<any>) => StateT,
   finalState: StateT,
 ) {
+  if (!isType(initialAction, saga.actionCreator)) {
+    throw new Error(`Initial action does not match expected type`);
+  }
+
   let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
+  // TODO: Shouldn't the initial action be run through the reducers before hitting the saga?
+  // state = reducer(initialState, initialAction);
 
   let awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
 
@@ -191,7 +197,7 @@ export async function testSagaWithState<StateT, Payload>(
      * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
      */
     testContext,
-    initialPayload,
+    initialAction.payload,
   );
 
   deepStrictEqual(state, finalState);

@@ -6,4 +6,3 @@ import { SagaEnvironment } from '../lib';
 export const forEvery = createTypedForEvery<AppState>();
 export const forLatest = createTypedForLatest<AppState>();
 export type AppEnv = SagaEnvironment<AppState>;
-

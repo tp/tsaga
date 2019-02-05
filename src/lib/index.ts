@@ -90,7 +90,7 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
 
             sagaPromises.push(
               saga
-                .innerFunction(context, action)
+                .innerFunction(context, action.payload)
                 .then((e) => 'completed')
                 .catch((e) => {
                   if (e instanceof SagaCancelledError) {
@@ -107,11 +107,11 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
     };
   };
 
+  // TODO: Add support to also await forks
   const sagaCompletion = async (): Promise<void> => {
     const promises = sagaPromises.slice(0);
 
-    const res = await Promise.all(promises);
-    console.error(`res`, res);
+    await Promise.all(promises);
   };
 
   return { middleware: middleWare, sagaCompletion };

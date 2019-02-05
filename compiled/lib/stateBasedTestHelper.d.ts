@@ -13,5 +13,5 @@ declare type ValueMock<T> = {
     func: Function;
     value: T;
 };
-export declare function testSagaWithState<StateT, Payload>(saga: Saga<StateT, any, Payload>, initialPayload: Payload, mocks: ValueMock<any>[], initialState: StateT | undefined, reducer: (state: StateT | undefined, action: Action) => StateT, finalState: StateT): Promise<void>;
+export declare function testSagaWithState<StateT, Payload>(saga: Saga<StateT, any, Payload>, initialAction: Action<Payload>, mocks: ValueMock<any>[], initialState: StateT | undefined, reducer: (state: StateT | undefined, action: Action) => StateT, finalState: StateT): Promise<void>;
 export {};

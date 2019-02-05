@@ -49,7 +49,7 @@ test('waitFor functionality test', function () { return __awaiter(_this, void 0,
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
-                waitForSaga = sagas_1.forLatest(actions_1.userSelected, function (_a, action) {
+                waitForSaga = sagas_1.forLatest(actions_1.userSelected, function (_a, payload) {
                     var dispatch = _a.dispatch, select = _a.select, run = _a.run, take = _a.take;
                     return __awaiter(_this, void 0, void 0, function () {
                         var count;

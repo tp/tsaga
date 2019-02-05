@@ -52,7 +52,7 @@ function createTypedForEvery() {
     return function (actionCreator, saga) {
         return {
             actionCreator: actionCreator,
-            saga: saga,
+            innerFunction: saga,
             type: 'every',
         };
     };
@@ -62,7 +62,7 @@ function createTypedForLatest() {
     return function (actionCreator, saga) {
         return {
             actionCreator: actionCreator,
-            saga: saga,
+            innerFunction: saga,
             type: 'latest',
         };
     };
@@ -104,10 +104,9 @@ function tsagaReduxMiddleware(sagas) {
                             cancellationToken = new CancellationToken_1.CancellationToken();
                             cancellationTokens.set(saga, cancellationToken);
                         }
-                        var context = new environment_1.Environment(api /* TODO: subscribe is missing, but that's fine for now */, waitForMessage, cancellationToken);
-                        // console.error(`action matches expected creator`, action, `running saga`);
+                        var context = new environment_1.Environment(api, waitForMessage, cancellationToken);
                         sagaPromises.push(saga
-                            .saga(context, action)
+                            .innerFunction(context, action)
                             .then(function (e) { return 'completed'; })
                             .catch(function (e) {
                             if (e instanceof SagaCancelledError_1.SagaCancelledError) {
@@ -121,16 +120,16 @@ function tsagaReduxMiddleware(sagas) {
             };
         };
     };
+    // TODO: Add support to also await forks
     var sagaCompletion = function () { return __awaiter(_this, void 0, void 0, function () {
-        var promises, res;
+        var promises;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     promises = sagaPromises.slice(0);
                     return [4 /*yield*/, Promise.all(promises)];
                 case 1:
-                    res = _a.sent();
-                    console.error("res", res);
+                    _a.sent();
                     return [2 /*return*/];
             }
         });

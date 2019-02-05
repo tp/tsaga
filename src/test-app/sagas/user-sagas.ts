@@ -48,7 +48,7 @@ export const increaseCounter = ({ dispatch, select, run }: AppEnv) => {
 
 export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(
   userSelected,
-  async ({ dispatch, select, run, spawn }, action) => {
+  async ({ dispatch, select, run, spawn }, payload) => {
     // console.error(env);
 
     console.error(`about to sleep`);

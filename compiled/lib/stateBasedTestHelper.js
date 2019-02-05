@@ -96,7 +96,7 @@ function forks(f) {
     };
 }
 exports.forks = forks;
-function testSagaWithState(saga, initialPayload, mocks, initialState, reducer, finalState) {
+function testSagaWithState(saga, initialAction, mocks, initialState, reducer, finalState) {
     return __awaiter(this, void 0, void 0, function () {
         function waitForMessage(actionCreator) {
             console.error("waitForMessage called");
@@ -109,7 +109,11 @@ function testSagaWithState(saga, initialPayload, mocks, initialState, reducer, f
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    if (!typescript_fsa_1.isType(initialAction, saga.actionCreator)) {
+                        throw new Error("Initial action does not match expected type");
+                    }
                     state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
+                    state = reducer(initialState, initialAction);
                     awaitingMessages = [];
                     testContext = {
                         run: function (f) {
@@ -185,13 +189,13 @@ function testSagaWithState(saga, initialPayload, mocks, initialState, reducer, f
                             return waitForMessage(actionCreator);
                         },
                     };
-                    return [4 /*yield*/, saga.saga(
+                    return [4 /*yield*/, saga.innerFunction(
                         /**
                          * Fine, since the outside interface is equal, it's just not of the same `class`
                          *
                          * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
                          */
-                        testContext, { payload: initialPayload })];
+                        testContext, initialAction.payload)];
                 case 1:
                     _a.sent();
                     assert_1.deepStrictEqual(state, finalState);

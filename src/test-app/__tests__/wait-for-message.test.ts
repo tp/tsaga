@@ -8,7 +8,7 @@ import { forLatest } from '../sagas';
 nock.disableNetConnect();
 
 test('waitFor functionality test', async () => {
-  const waitForSaga = forLatest(userSelected, async ({ dispatch, select, run, take }, action) => {
+  const waitForSaga = forLatest(userSelected, async ({ dispatch, select, run, take }, payload) => {
     console.error(`waitfor saga started`);
 
     const { count } = await take(setCount);
