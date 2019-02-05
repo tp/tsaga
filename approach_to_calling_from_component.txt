@@ -1,0 +1,30 @@
+singleExecution(function loadUser(env, userId) {
+
+})
+
+class Component {
+
+    handleClick() {
+        // this is started immediately
+        this.props.loadUser(5); // or pass this.getEnv()
+    }
+
+}
+
+mapDispatch({
+    loadUser,
+})
+
+// async action / loading/failure states
+
+
+
+function () {
+  const [run] = useEnv()
+
+  return <div onClick={() => run(saga)}>Add to Basket</div>;
+}
+
+function run(saga, payload) {
+  return saga.actionCreator(payload)
+}

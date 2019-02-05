@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "module": "es6",
-    "lib": ["es2018", "dom"],
-    "target": "es6",
+    "module": "commonjs",
+    "jsx": "react",
+    "lib": ["es2015", "es2016", "dom" /* not ideal, but currently needed to make `Promise` work */],
+    "target": "es5",
     "strict": true,
-    "moduleResolution": "node",
-    "declaration": true,
-    "outDir": "./lib"
+    "outDir": "./compiled",
+    "declaration": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["src/compilationSamples/samples/**/*"]
 }
