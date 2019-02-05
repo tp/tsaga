@@ -5,7 +5,7 @@ import { Action } from './types';
 export { Task } from './environment';
 export { Action } from './types';
 export { Environment };
-export { testSaga, runs, selects } from './testHelpers';
+export { testSaga, runs, selects, forks, spawns } from './testHelpers';
 export { testSagaWithState } from './stateBasedTestHelper';
 export interface Saga<StateT, ActionT extends Action, Payload> {
     actionCreator: ActionCreator<Payload>;

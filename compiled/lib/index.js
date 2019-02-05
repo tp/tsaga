@@ -44,6 +44,8 @@ var testHelpers_1 = require("./testHelpers");
 exports.testSaga = testHelpers_1.testSaga;
 exports.runs = testHelpers_1.runs;
 exports.selects = testHelpers_1.selects;
+exports.forks = testHelpers_1.forks;
+exports.spawns = testHelpers_1.spawns;
 var stateBasedTestHelper_1 = require("./stateBasedTestHelper");
 exports.testSagaWithState = stateBasedTestHelper_1.testSagaWithState;
 function createTypedForEvery() {
