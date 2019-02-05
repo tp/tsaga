@@ -3,6 +3,7 @@ import { AnySaga, Saga } from '.';
 import { Environment } from './environment';
 import { deepStrictEqual } from 'assert';
 import { Action } from './types';
+import { ActionCreator, isType } from 'typescript-fsa';
 
 // type SilentAssertion = {
 //   type: 'dispatch',
@@ -112,6 +113,17 @@ export async function testSagaWithState<StateT, Payload>(
 ) {
   let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
 
+  let awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
+
+  function waitForMessage<Payload>(actionCreator: ActionCreator<Payload>): Promise<Payload> {
+    console.error(`waitForMessage called`);
+
+    return new Promise((resolve, reject) => {
+      awaitingMessages.push({ actionCreator: actionCreator, promiseResolve: resolve });
+      console.error(`awaitingMessages`, awaitingMessages);
+    });
+  }
+
   const testContext: InterfaceOf<Environment<any, Action>> = {
     run: (f: Function, ...args: any[]) => {
       for (const effect of mocks) {
@@ -139,6 +151,13 @@ export async function testSagaWithState<StateT, Payload>(
       console.log(`test env dispatch`, action);
 
       state = reducer(state, action);
+
+      for (const config of awaitingMessages) {
+        if (isType(action, config.actionCreator)) {
+          config.promiseResolve(action.payload);
+        }
+      }
+      awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
     },
     fork: (f: Function, ...args: any[]) => {
       // TODO: Create detached context / add cancellation to tests?
@@ -164,8 +183,8 @@ export async function testSagaWithState<StateT, Payload>(
 
       return f(testContext, ...args);
     },
-    take: () => {
-      throw new Error(`Not implemented: take`);
+    take: <T>(actionCreator: ActionCreator<T>): Promise<T> => {
+      return waitForMessage(actionCreator);
     },
   };
 
