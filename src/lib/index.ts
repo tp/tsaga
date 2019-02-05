@@ -9,6 +9,7 @@ export { Task } from './environment';
 export { Action } from './types';
 export { Environment };
 export { testSaga, runs, selects } from './testHelpers';
+export { testSagaWithState } from './stateBasedTestHelper';
 
 export interface Saga<StateT, ActionT extends Action, Payload> {
   actionCreator: ActionCreator<Payload>;
