@@ -37,6 +37,7 @@
     "typescript-fsa": "^3.0.0-beta-2"
   },
   "files": [
-    "compiled/lib/**/*"
+    "compiled/lib/**/*",
+    "compiled/lib/index.js"
   ]
 }
