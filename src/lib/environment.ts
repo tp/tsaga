@@ -8,7 +8,7 @@ export function createSagaEnvironment<State>(
   waitForAction: WaitForAction,
   cancellationToken?: CancellationToken,
 ): SagaEnvironment<State> {
-  return {
+  const env: SagaEnvironment<State> = {
     dispatch(action) {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
@@ -34,7 +34,7 @@ export function createSagaEnvironment<State>(
     },
 
     spawn(f, ...args) {
-      return f(this, ...args);
+      return f(env, ...args);
     },
 
     async take(actionCreator) {
@@ -61,4 +61,6 @@ export function createSagaEnvironment<State>(
       };
     }
   };
+
+  return env;
 }
