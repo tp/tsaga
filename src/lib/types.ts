@@ -10,6 +10,10 @@ export interface Task<T> {
 
 export type WaitForAction = <Payload>(actionCreator: ActionCreator<Payload>) => Promise<Action<Payload>>;
 
+export interface Effect<State, Args extends any[], Return> {
+  run(env: SagaEnvironment<State>, ...args: Args): Return,
+}
+
 export interface SagaEnvironment<State> {
   /**
    * Dispatch an action to the store from a saga.
@@ -36,6 +40,11 @@ export interface SagaEnvironment<State> {
    * @param params - The arguments for the function.
    */
   run<T, Args extends any[]>(f: (...params: Args) => T, ...params: Args): T;
+
+  /**
+   * Run an effect which also receives the arguments.
+   */
+  run<Args extends any[], Return>(effect: Effect<State, Args, Return>, ...args: Args): Return;
 
   /**
    * Wait for an action to be dispatched.

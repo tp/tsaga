@@ -1,7 +1,7 @@
 import { MiddlewareAPI } from 'redux';
 import { CancellationToken } from './CancellationToken';
 import { SagaCancelledError } from './SagaCancelledError';
-import { SagaEnvironment, WaitForAction } from './types';
+import { SagaEnvironment, WaitForAction, Effect } from './types';
 
 export function createSagaEnvironment<State>(
   store: MiddlewareAPI<any, State>,
@@ -25,12 +25,19 @@ export function createSagaEnvironment<State>(
       return selector(store.getState(), ...args);
     },
 
-    run(f, ...params) {
+    run<Return, Args extends any[]>(
+      f: ((...args: Args) => Return) | Effect<State, Args, Return>,
+      ...args: Args
+    ): Return {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      return f(...params);
+      if (typeof f === 'function') {
+        return f(...args);
+      }
+
+      return f.run(env, ...args);
     },
 
     spawn(f, ...args) {

@@ -2,6 +2,7 @@ import { forEvery, forLatest, AppEnv } from '../sagas';
 import { userSelected, userLoaded, setCount } from '../actions';
 import { getSelectedUserId, getUserById, getCount } from '../selectors';
 import { loadUser, sleep } from '../app-library';
+import { withEnv } from '../../lib/helpers';
 
 /**
  * consumer
@@ -38,13 +39,13 @@ export const watchForUserSelectToLoad = forLatest(userSelected, async ({ dispatc
 //   export const watchForUserSelectLatest = forLatest(userSelected, watchForUserSelect.saga);
 //
 
-export const increaseCounter = ({ dispatch, select, run }: AppEnv) => {
+export const increaseCounter = withEnv(({ dispatch, select, run }: AppEnv, increase: number) => {
   const count = select(getCount);
-  console.error(`about to set new count:`, count + 1);
+  console.error(`about to set new count:`, count + increase);
 
   dispatch(setCount({ count: count + 1 }));
   // console.error(`count set`, select(getCount));
-};
+});
 
 export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(
   userSelected,
@@ -57,7 +58,7 @@ export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(
 
     console.error(`sleep done`);
 
-    await spawn(increaseCounter);
+    await run(increaseCounter);
   },
 );
 
