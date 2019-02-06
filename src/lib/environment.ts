@@ -82,3 +82,16 @@ export interface Task<T> {
 type InterfaceOf<T> = { [P in keyof T]: T[P] };
 
 export type EnvironmentType<StateT, ActionT extends Action> = InterfaceOf<Environment<StateT, ActionT>>;
+
+type Effect<StateT, ActionT extends Action, P extends any[], ReturnT> = {
+  // EnvironmentType<StateT, ActionT extends Action>
+  type: 'call';
+  func: (env: EnvironmentType<StateT, ActionT>, ...args: P) => ReturnT;
+  (...args: P): ReturnT;
+  // args: P;
+};
+
+function withEnv<T>(f: (...args: any[]) => T): T {
+  Object.defineProperty(f, 'name', { value: arguments.callee.name });
+  return f();
+}
