@@ -11,7 +11,9 @@ export class Environment<StateT, ActionT extends Action> {
     private readonly store: ReadStore<StateT, ActionT>,
     private readonly waitForMessage: <Payload>(action: ActionCreator<Payload>) => Promise<FsaAction<Payload>>,
     private readonly cancellationToken?: CancellationToken,
-  ) {}
+  ) {
+    this.run = this.run.bind(this) as any;
+  }
 
   public dispatch = (action: ActionT): void => {
     if (this.cancellationToken && this.cancellationToken.canceled) {
@@ -46,21 +48,29 @@ export class Environment<StateT, ActionT extends Action> {
     return selector(this.store.getState(), ...args);
   };
 
-  public run = <T, P extends any[]>(f: (...params: P) => T, ...params: P): T => {
+  public run<T, P extends any[]>(f: (...params: P) => T, ...params: P): T;
+  public run<T, P extends any[]>(effect: Effect<StateT, ActionT, P, T>, ...params: P): T;
+  public run<T, P extends any[]>(funcOrEffect: Effect<StateT, ActionT, P, T> | ((...params: P) => T), ...params: P): T {
     if (this.cancellationToken && this.cancellationToken.canceled) {
       throw new SagaCancelledError(`Saga has been cancelled`);
     }
 
-    return f(...params);
-  };
+    if (typeof funcOrEffect === 'function') {
+      return funcOrEffect(...params);
+    } else {
+      return funcOrEffect.func(this, ...params);
+    }
+
+    // return f(...params);
+  }
 
   public take = async <Payload>(actionCreator: ActionCreator<Payload>): Promise<Payload> => {
     return (await this.waitForMessage(actionCreator)).payload;
   };
 
-  public spawn = <P extends any[], T>(f: (env: Environment<StateT, ActionT>, ...args: P) => T, ...args: P): T => {
-    return f(this, ...args);
-  };
+  // public spawn = <P extends any[], T>(f: (env: Environment<StateT, ActionT>, ...args: P) => T, ...args: P): T => {
+  //   return f(this, ...args);
+  // };
 
   public fork = <P extends any[], T>(f: (env: Environment<StateT, ActionT>, ...args: P) => T, ...args: P): Task<T> => {
     const { childEnv, cancellationToken } = this.createDetachedChildEnvironment();
@@ -83,15 +93,23 @@ type InterfaceOf<T> = { [P in keyof T]: T[P] };
 
 export type EnvironmentType<StateT, ActionT extends Action> = InterfaceOf<Environment<StateT, ActionT>>;
 
-type Effect<StateT, ActionT extends Action, P extends any[], ReturnT> = {
+export type Effect<StateT, ActionT extends Action, P extends any[], ReturnT> = {
   // EnvironmentType<StateT, ActionT extends Action>
-  type: 'call';
+  type: 'call-with-env-effect';
   func: (env: EnvironmentType<StateT, ActionT>, ...args: P) => ReturnT;
-  (...args: P): ReturnT;
+  // run: (...args: P) => ReturnT;
   // args: P;
 };
 
-function withEnv<T>(f: (...args: any[]) => T): T {
-  Object.defineProperty(f, 'name', { value: arguments.callee.name });
-  return f();
+// TODO: Create typed with env
+export function withEnv<StateT, ActionT extends Action, P extends any[], T>(
+  f: (env: EnvironmentType<StateT, ActionT>, ...args: P) => T,
+): Effect<StateT, ActionT, P, T> {
+  // Object.defineProperty(f, 'name', { value: arguments.callee.name });
+
+  return {
+    type: 'call-with-env-effect',
+    func: f,
+    // run (...args) => env
+  };
 }

@@ -1,6 +1,6 @@
 import { Selector } from 'reselect';
 import { AnySaga, Saga } from '.';
-import { Environment, EnvironmentType } from './environment';
+import { Environment, EnvironmentType, Effect } from './environment';
 import { deepStrictEqual } from 'assert';
 import { Action } from './types';
 import { ActionCreator, isType } from 'typescript-fsa';
@@ -129,16 +129,25 @@ export async function testSagaWithState<StateT, Payload>(
   }
 
   const testContext: EnvironmentType<any, Action> = {
-    run: (f: Function, ...args: any[]) => {
+    run: <P extends any[], T>(funcOrEffect: Effect<StateT, any, P, T> | ((...params: P) => T), ...params: P) => {
       for (const effect of mocks) {
-        if (effect.type === 'call' && effect.func === f /* TODO: & check args */) {
+        if (
+          effect.type === 'call' &&
+          (typeof funcOrEffect === 'function'
+            ? effect.func === funcOrEffect
+            : effect.func === funcOrEffect.func) /* TODO: & check args */
+        ) {
           return effect.value;
         }
       }
 
       console.error(`run: calling through`);
 
-      return f(...args);
+      if (typeof funcOrEffect === 'function') {
+        return funcOrEffect(...params);
+      } else {
+        return funcOrEffect.func(testContext, ...params);
+      }
     },
     select: (selector: Function, ...args: any[]) => {
       for (const effect of mocks) {
@@ -176,17 +185,17 @@ export async function testSagaWithState<StateT, Payload>(
       return f(testContext, ...args);
       // throw new Error(`Not implemented: fork`);
     },
-    spawn: (f: Function, ...args: any[]) => {
-      for (const effect of mocks) {
-        if (effect.type === 'spawn' && effect.func === f) {
-          return effect.value;
-        }
-      }
+    // spawn: (f: Function, ...args: any[]) => {
+    //   for (const effect of mocks) {
+    //     if (effect.type === 'spawn' && effect.func === f) {
+    //       return effect.value;
+    //     }
+    //   }
 
-      console.error(`spawn: calling through`);
+    //   console.error(`spawn: calling through`);
 
-      return f(testContext, ...args);
-    },
+    //   return f(testContext, ...args);
+    // },
     take: <T>(actionCreator: ActionCreator<T>): Promise<T> => {
       return waitForMessage(actionCreator);
     },
