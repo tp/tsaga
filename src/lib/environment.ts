@@ -50,13 +50,19 @@ export class Environment<StateT, ActionT extends Action> {
 
   public run<T, P extends any[]>(f: (...params: P) => T, ...params: P): T;
   public run<T, P extends any[]>(effect: Effect<StateT, ActionT, P, T>, ...params: P): T;
-  public run<T, P extends any[]>(funcOrEffect: Effect<StateT, ActionT, P, T> | ((...params: P) => T), ...params: P): T {
+  public run<T, P extends any[]>(effect: EffectCreator<StateT, ActionT, P, T>): T;
+  public run<T, P extends any[]>(
+    funcOrEffect: EffectCreator<StateT, ActionT, P, T> | Effect<StateT, ActionT, P, T> | ((...params: P) => T),
+    ...params: P
+  ): T {
     if (this.cancellationToken && this.cancellationToken.canceled) {
       throw new SagaCancelledError(`Saga has been cancelled`);
     }
 
     if (typeof funcOrEffect === 'function') {
       return funcOrEffect(...params);
+    } else if (funcOrEffect.type === 'call-run-with-env-effect') {
+      return funcOrEffect._innerFunc(this, ...funcOrEffect._innerFuncArgs);
     } else {
       return funcOrEffect.func(this, ...params);
     }
@@ -95,10 +101,17 @@ export type EnvironmentType<StateT, ActionT extends Action> = InterfaceOf<Enviro
 
 export type Effect<StateT, ActionT extends Action, P extends any[], ReturnT> = {
   // EnvironmentType<StateT, ActionT extends Action>
-  type: 'call-with-env-effect';
+  type: 'call-func-with-env-effect';
   func: (env: EnvironmentType<StateT, ActionT>, ...args: P) => ReturnT;
   // run: (...args: P) => ReturnT;
   // args: P;
+};
+
+export type EffectCreator<StateT, ActionT extends Action, P extends any[], ReturnT> = {
+  type: 'call-run-with-env-effect';
+
+  _innerFunc: (env: EnvironmentType<StateT, ActionT>, ...args: P) => ReturnT;
+  _innerFuncArgs: P;
 };
 
 // TODO: Create typed with env
@@ -108,8 +121,56 @@ export function withEnv<StateT, ActionT extends Action, P extends any[], T>(
   // Object.defineProperty(f, 'name', { value: arguments.callee.name });
 
   return {
-    type: 'call-with-env-effect',
+    type: 'call-func-with-env-effect',
     func: f,
     // run (...args) => env
   };
+}
+
+export function deferredCall<StateT, ActionT extends Action, P extends any[], T>(
+  f: (env: EnvironmentType<StateT, ActionT>, ...args: P) => T,
+  ...args: P
+): EffectCreator<StateT, ActionT, P, T> {
+  return {
+    type: 'call-run-with-env-effect',
+    _innerFunc: f,
+    _innerFuncArgs: args,
+  };
+}
+
+// export function deferredCall<StateT, ActionT extends Action, P extends any[], T>(
+//   f: (env: EnvironmentType<StateT, ActionT>, ...args: P) => T,
+//   ...args: P
+// ): EffectCreator<StateT, ActionT, P, T> {
+//   return {
+//     type: 'call-run-with-env-effect',
+//     _innerFunc: f,
+//     _innerFuncArgs: args,
+//   };
+// }
+
+// request: BapiCall<T>
+function resultIdentity<T>(f: () => T): { result: T } {
+  return { result: f() };
+}
+
+// test case  for type inference
+function call<P1, R>(f: (p1: P1) => R, p1: P1): R {
+  return f(p1);
+}
+
+function identity<T>(o: T): T {
+  return o;
+}
+
+// identity
+
+abstract class EffectCreator3<Env, Params extends any[], ReturnType> {
+  public readonly args: Params;
+
+  constructor(...args: Params) {
+    this.args = args;
+  }
+
+  public abstract run(run: Env, ...args: Params): ReturnType;
 }
