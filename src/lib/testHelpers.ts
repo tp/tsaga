@@ -1,6 +1,6 @@
 import { Selector } from 'reselect';
 import { AnySaga } from '.';
-import { Environment, Effect } from './environment';
+import { Environment } from './environment';
 import { deepStrictEqual } from 'assert';
 import { Action } from './types';
 
@@ -14,15 +14,13 @@ import { Action } from './types';
 // TODO: Affordances for effects and effect creators
 // TODO: Do we need plain effect in here? Or should always creators be passed?
 // Otherwise the call-site could be written as either `run(f, x)` or `run(f(x))`…
-export function runs<P extends any[], T>(
-  f: Effect<any, any, any, T> | ((...args: P) => T),
-): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
+export function runs<P extends any[], T>(f: (...args: P) => T): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
   // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
   return {
     receiving: (value) => {
       return {
         type: 'call',
-        func: typeof f === 'function' ? f : f.func,
+        func: f,
         value: value,
       };
     },

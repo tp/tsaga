@@ -76,16 +76,19 @@ export class Environment<StateT, ActionT extends Action> {
    * @param effectOrEffectCreator
    * @param params
    */
-  public run<T, P extends any[]>(effect: BoundEffect<Environment<StateT, ActionT>, P, T>, ...params: P): T;
-  public run<T, P extends any[]>(effect: Effect<StateT, ActionT, P, T>, ...params: P): T;
+  public run<T, P extends any[]>(effect: BoundEffect<Environment<StateT, ActionT>, P, T>): T;
+  public run<T, P extends any[]>(effect: SagaFunc<StateT, ActionT, P, T>, ...params: P): T;
   public run<P extends any[], T>(
-    effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | Effect<StateT, ActionT, P, T>,
+    effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
     ...args: P
   ): T {
+    // TODO: Add overload for (env: Env, ...) => T
+    // Can we get rid of `withEnv` then?
+
     if (effectOrEffectCreator instanceof BoundEffect) {
       return effectOrEffectCreator.run(this, ...effectOrEffectCreator.args);
     } else {
-      return effectOrEffectCreator.func(this, ...args);
+      return effectOrEffectCreator(this, ...args);
     }
   }
 
@@ -97,10 +100,10 @@ export class Environment<StateT, ActionT extends Action> {
    * @param effect
    * @param params
    */
-  public spawn<T, P extends any[]>(effect: BoundEffect<Environment<StateT, ActionT>, P, T>, ...params: P): Task<T>;
-  public spawn<T, P extends any[]>(effect: Effect<StateT, ActionT, P, T>, ...params: P): Task<T>;
+  public spawn<T, P extends any[]>(effect: BoundEffect<Environment<StateT, ActionT>, P, T>): Task<T>;
+  public spawn<T, P extends any[]>(effect: SagaFunc<StateT, ActionT, P, T>, ...params: P): Task<T>;
   public spawn<P extends any[], T>(
-    effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | Effect<StateT, ActionT, P, T>,
+    effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
     ...args: P
   ): Task<T> {
     const { childEnv, cancellationToken } = this.createDetachedChildEnvironment();
@@ -110,7 +113,7 @@ export class Environment<StateT, ActionT extends Action> {
       result:
         effectOrEffectCreator instanceof BoundEffect
           ? effectOrEffectCreator.run(childEnv, ...effectOrEffectCreator.args)
-          : effectOrEffectCreator.func(childEnv, ...args),
+          : effectOrEffectCreator(childEnv, ...args),
     };
 
     return task;
@@ -126,19 +129,10 @@ type InterfaceOf<T> = { [P in keyof T]: T[P] };
 
 export type EnvironmentType<StateT, ActionT extends Action> = InterfaceOf<Environment<StateT, ActionT>>;
 
-export type Effect<StateT, ActionT extends Action, P extends any[], ReturnT> = {
-  type: 'call-func-with-env-effect';
-  func: (env: EnvironmentType<StateT, ActionT>, ...args: P) => ReturnT;
-};
-
-export function withEnv<StateT, ActionT extends Action, P extends any[], T>(
-  f: (env: EnvironmentType<StateT, ActionT>, ...args: P) => T,
-): Effect<StateT, ActionT, P, T> {
-  return {
-    type: 'call-func-with-env-effect',
-    func: f,
-  };
-}
+export type SagaFunc<StateT, ActionT extends Action, P extends any[], ReturnT> = (
+  env: EnvironmentType<StateT, ActionT>,
+  ...args: P
+) => ReturnT;
 
 export abstract class BoundEffect<Env, Params extends any[], ReturnType> {
   public readonly args: Params;

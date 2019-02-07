@@ -1,6 +1,6 @@
 import { Selector } from 'reselect';
 import { AnySaga, Saga } from '.';
-import { Environment, EnvironmentType, Effect, BoundEffect, Task } from './environment';
+import { Environment, EnvironmentType, BoundEffect, Task, SagaFunc } from './environment';
 import { deepStrictEqual } from 'assert';
 import { Action } from './types';
 import { ActionCreator, isType } from 'typescript-fsa';
@@ -31,14 +31,14 @@ export function calls<P extends any[], T>(
 }
 
 export function spawns<StateT, ActionT extends Action, P extends any[], T>(
-  effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | Effect<StateT, ActionT, P, T>,
+  effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
 ): ValueMockBuilder<T> {
   // extends Promise<infer PT> ? PT : T
   return {
     receiving: (value) => {
       return {
         type: 'spawn',
-        effectOrEffectCreator: effectOrEffectCreator,
+        funcOrBoundEffect: effectOrEffectCreator,
         value: value,
       };
     },
@@ -60,13 +60,13 @@ export function selects<T>(selector: (state: any) => T): ValueMockBuilder<T> {
 }
 
 export function runs<StateT, ActionT extends Action, P extends any[], T>(
-  effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | Effect<StateT, ActionT, P, T>,
+  funcOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
 ): ValueMockBuilder<T> {
   return {
     receiving: (value): ValueMock<T> => {
       return {
         type: 'run',
-        effectOrEffectCreator,
+        funcOrBoundEffect: funcOrEffectCreator,
         value,
       };
     },
@@ -85,7 +85,7 @@ type ValueMock<T> =
     }
   | {
       type: 'run';
-      effectOrEffectCreator: BoundEffect<Environment<any, any>, any, any> | Effect<any, any, any, any>;
+      funcOrBoundEffect: BoundEffect<Environment<any, any>, any, any> | SagaFunc<any, any, any, any>;
       value: T;
     }
   | {
@@ -95,7 +95,7 @@ type ValueMock<T> =
     }
   | {
       type: 'spawn';
-      effectOrEffectCreator: BoundEffect<Environment<any, any>, any, T> | Effect<any, any, any, T>;
+      funcOrBoundEffect: BoundEffect<Environment<any, any>, any, T> | SagaFunc<any, any, any, T>;
       value: T;
     };
 
@@ -185,22 +185,19 @@ export async function testSagaWithState<StateT, Payload>(
       awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
     },
     spawn: <P extends any[], T>(
-      effectOrEffectCreator: BoundEffect<Environment<StateT, Action>, P, T> | Effect<StateT, Action, P, T>,
+      funcOrBoundEffect: BoundEffect<Environment<StateT, Action>, P, T> | SagaFunc<StateT, Action, P, T>,
       ...args: P
     ): Task<T> => {
       // TODO: Create detached context / add cancellation to tests?
       for (const effect of mocks) {
         if (effect.type === 'spawn') {
-          if (effectOrEffectCreator instanceof BoundEffect) {
-            if (effect.effectOrEffectCreator instanceof BoundEffect) {
-              if ((effect.effectOrEffectCreator as any).constructor === (effectOrEffectCreator as any).constructor) {
+          if (funcOrBoundEffect instanceof BoundEffect) {
+            if (effect.funcOrBoundEffect instanceof BoundEffect) {
+              if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
                 return effect.value;
               }
             }
-          } else if (
-            !(effect.effectOrEffectCreator instanceof BoundEffect) &&
-            effect.effectOrEffectCreator.func === effectOrEffectCreator.func
-          ) {
+          } else if (effect.funcOrBoundEffect === funcOrBoundEffect) {
             return effect.value;
           }
         }
@@ -210,9 +207,9 @@ export async function testSagaWithState<StateT, Payload>(
 
       // TODO
       const result =
-        effectOrEffectCreator instanceof BoundEffect
-          ? effectOrEffectCreator.run(testContext as any /* TODO */, ...effectOrEffectCreator.args)
-          : effectOrEffectCreator.func(testContext, ...args);
+        funcOrBoundEffect instanceof BoundEffect
+          ? funcOrBoundEffect.run(testContext as any /* TODO */, ...funcOrBoundEffect.args)
+          : funcOrBoundEffect(testContext, ...args);
 
       return {
         cancel: () => {},
@@ -220,21 +217,18 @@ export async function testSagaWithState<StateT, Payload>(
       };
     },
     run: <P extends any[], T>(
-      effectOrEffectCreator: BoundEffect<Environment<StateT, Action>, P, T> | Effect<StateT, Action, P, T>,
+      funcOrBoundEffect: BoundEffect<Environment<StateT, Action>, P, T> | SagaFunc<StateT, Action, P, T>,
       ...args: P
     ): T => {
       for (const effect of mocks) {
         if (effect.type === 'run') {
-          if (effectOrEffectCreator instanceof BoundEffect) {
-            if (effect.effectOrEffectCreator instanceof BoundEffect) {
-              if ((effect.effectOrEffectCreator as any).constructor === (effectOrEffectCreator as any).constructor) {
+          if (funcOrBoundEffect instanceof BoundEffect) {
+            if (effect.funcOrBoundEffect instanceof BoundEffect) {
+              if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
                 return effect.value;
               }
             }
-          } else if (
-            !(effect.effectOrEffectCreator instanceof BoundEffect) &&
-            effect.effectOrEffectCreator.func === effectOrEffectCreator.func
-          ) {
+          } else if (effect.funcOrBoundEffect === funcOrBoundEffect) {
             return effect.value;
           }
         }
@@ -242,10 +236,10 @@ export async function testSagaWithState<StateT, Payload>(
 
       console.info(`run: calling through`);
 
-      if (effectOrEffectCreator instanceof BoundEffect) {
-        return effectOrEffectCreator.run(testContext as any /* TODO */, ...effectOrEffectCreator.args);
+      if (funcOrBoundEffect instanceof BoundEffect) {
+        return funcOrBoundEffect.run(testContext as any /* TODO */, ...funcOrBoundEffect.args);
       } else {
-        return effectOrEffectCreator.func(testContext, ...args);
+        return funcOrBoundEffect(testContext, ...args);
       }
     },
     take: <T>(actionCreator: ActionCreator<T>): Promise<T> => {
