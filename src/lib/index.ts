@@ -4,7 +4,7 @@ import { CancellationToken } from './CancellationToken';
 import { Environment, EnvironmentType } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
-export { Task, BoundEffect } from './environment';
+export { Task, BoundEffect, EnvironmentType } from './environment';
 export { Action } from './types';
 export { Environment };
 export { testSaga } from './testHelpers';
