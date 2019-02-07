@@ -4,11 +4,11 @@ import { CancellationToken } from './CancellationToken';
 import { Environment, EnvironmentType } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
 import { Action } from './types';
-export { Task } from './environment';
+export { Task, BoundEffect } from './environment';
 export { Action } from './types';
 export { Environment };
-export { testSaga, runs, selects, forks } from './testHelpers';
-export { testSagaWithState } from './stateBasedTestHelper';
+export { testSaga } from './testHelpers';
+export { testSagaWithState, runs, selects, calls, spawns } from './stateBasedTestHelper';
 
 export interface Saga<StateT, ActionT extends Action, Payload> {
   actionCreator: ActionCreator<Payload>;

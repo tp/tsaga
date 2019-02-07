@@ -75,7 +75,7 @@ type ValueMockBuilder<T> = {
 };
 
 type ValueMock<T> = {
-  type: 'select' | 'call' | 'spawn' | 'fork';
+  type: 'select' | 'call' | 'run' | 'spawn';
   func: Function;
   value: T;
 };
@@ -119,17 +119,14 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                   let state = reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE' }); // TODO: Or accept initial state?
 
                   const testContext: InterfaceOf<Environment<any, Action>> = {
-                    run: <P extends any[], T>(
-                      funcOrEffect: Effect<any, any, P, T> | ((...params: P) => T),
-                      ...params: P
-                    ) => {
+                    call: <P extends any[], T>(f: (...params: P) => T, ...params: P) => {
                       // ((...args: any[]) => any) | Effect<any, any>
                       for (const effect of effects) {
                         if (
                           effect.type === 'call' &&
-                          (typeof funcOrEffect === 'function'
-                            ? effect.func === funcOrEffect
-                            : effect.func === funcOrEffect.func) /* TODO: & check args */
+                          effect.func === f
+                          // (typeof funcOrEffect === 'function'
+                          //   : effect.func === funcOrEffect.func) /* TODO: & check args */
                         ) {
                           return effect.value;
                         }
@@ -145,12 +142,13 @@ export function testSaga(saga: AnySaga): SagaTest1 {
 
                       console.error(`run: calling through`);
 
-                      if (typeof funcOrEffect === 'function') {
-                        funcOrEffect(...params);
-                      } else {
-                        funcOrEffect.func(testContext, ...params);
-                      }
+                      f(...params);
+                      // if (typeof funcOrEffect === 'function') {
+                      // } else {
+                      //   funcOrEffect.func(testContext, ...params);
+                      // }
                     },
+
                     select: (selector: Function, ...args: any[]) => {
                       for (const effect of effects) {
                         if (effect.type === 'select' && effect.func === selector) {
@@ -167,10 +165,22 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                       // TODO: Support assertions on dispatched message, or is it fine to just check the final state?
                       state = reducer(state, action);
                     },
-                    fork: (f: Function, ...args: any[]) => {
+                    spawn: (f: any /* TODO */, ...args: any[]) => {
                       // TODO: Create detached context / add cancellation to tests?
                       for (const effect of effects) {
-                        if (effect.type === 'fork' && effect.func === f) {
+                        if (effect.type === 'spawn' && effect.func === f) {
+                          return effect.value;
+                        }
+                      }
+
+                      console.error(`spawn: calling through`);
+
+                      return f(testContext, ...args);
+                      // throw new Error(`Not implemented: fork`);
+                    },
+                    run: (f: any /* TODO */, ...args: any[]) => {
+                      for (const effect of effects) {
+                        if (effect.type === 'spawn' && effect.func === f) {
                           return effect.value;
                         }
                       }
@@ -178,19 +188,7 @@ export function testSaga(saga: AnySaga): SagaTest1 {
                       console.error(`fork: calling through`);
 
                       return f(testContext, ...args);
-                      // throw new Error(`Not implemented: fork`);
                     },
-                    // spawn: (f: Function, ...args: any[]) => {
-                    //   for (const effect of effects) {
-                    //     if (effect.type === 'spawn' && effect.func === f) {
-                    //       return effect.value;
-                    //     }
-                    //   }
-
-                    //   console.error(`spawn: calling through`);
-
-                    //   return f(testContext, ...args);
-                    // },
                     take: () => {
                       throw new Error(`Not implemented: take`);
                     },

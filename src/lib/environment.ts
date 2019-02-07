@@ -13,6 +13,7 @@ export class Environment<StateT, ActionT extends Action> {
     private readonly cancellationToken?: CancellationToken,
   ) {
     this.run = this.run.bind(this) as any;
+    this.spawn = this.spawn.bind(this) as any;
   }
 
   public dispatch = (action: ActionT): void => {
@@ -48,47 +49,72 @@ export class Environment<StateT, ActionT extends Action> {
     return selector(this.store.getState(), ...args);
   };
 
-  public run<T, P extends any[]>(f: (...params: P) => T, ...params: P): T;
-  public run<T, P extends any[]>(effect: Effect<StateT, ActionT, P, T>, ...params: P): T;
-  public run<T, P extends any[]>(effect: EffectCreator3<EnvironmentType<StateT, ActionT>, P, T>): T;
-  public run<T, P extends any[]>(
-    funcOrEffect:
-      | EffectCreator3<Environment<StateT, ActionT>, P, T>
-      | Effect<StateT, ActionT, P, T>
-      | ((...params: P) => T),
-    ...params: P
-  ): T {
+  /**
+   * Calls `f` with the supplied params
+   *
+   * In case the return type is not correctly inferred, wrap the function in an BoundEffect
+   *
+   * @param f
+   * @param params
+   */
+  public call = <T, P extends any[]>(f: (...params: P) => T, ...params: P): T => {
     if (this.cancellationToken && this.cancellationToken.canceled) {
       throw new SagaCancelledError(`Saga has been cancelled`);
     }
 
-    if (typeof funcOrEffect === 'function') {
-      return funcOrEffect(...params);
-    } else if (funcOrEffect instanceof EffectCreator3) {
-      return funcOrEffect.run(this, ...funcOrEffect.args);
-    } else {
-      return funcOrEffect.func(this, ...params);
-    }
-  }
+    return f(...params);
+  };
 
   public take = async <Payload>(actionCreator: ActionCreator<Payload>): Promise<Payload> => {
     return (await this.waitForMessage(actionCreator)).payload;
   };
 
-  // public spawn = <P extends any[], T>(f: (env: Environment<StateT, ActionT>, ...args: P) => T, ...args: P): T => {
-  //   return f(this, ...args);
-  // };
+  /**
+   * Runs the given saga as an attached child.
+   * Cancelling the parent will also cancel the child at the next opportunity.
+   *
+   * @param effectOrEffectCreator
+   * @param params
+   */
+  public run<T, P extends any[]>(effect: BoundEffect<Environment<StateT, ActionT>, P, T>, ...params: P): T;
+  public run<T, P extends any[]>(effect: Effect<StateT, ActionT, P, T>, ...params: P): T;
+  public run<P extends any[], T>(
+    effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | Effect<StateT, ActionT, P, T>,
+    ...args: P
+  ): T {
+    if (effectOrEffectCreator instanceof BoundEffect) {
+      return effectOrEffectCreator.run(this, ...effectOrEffectCreator.args);
+    } else {
+      return effectOrEffectCreator.func(this, ...args);
+    }
+  }
 
-  public fork = <P extends any[], T>(f: (env: Environment<StateT, ActionT>, ...args: P) => T, ...args: P): Task<T> => {
+  /**
+   * Spawns the saga in a new context, returning a detached task
+   *
+   * Cancelling this `Task` will not cancel the parent.
+   *
+   * @param effect
+   * @param params
+   */
+  public spawn<T, P extends any[]>(effect: BoundEffect<Environment<StateT, ActionT>, P, T>, ...params: P): Task<T>;
+  public spawn<T, P extends any[]>(effect: Effect<StateT, ActionT, P, T>, ...params: P): Task<T>;
+  public spawn<P extends any[], T>(
+    effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | Effect<StateT, ActionT, P, T>,
+    ...args: P
+  ): Task<T> {
     const { childEnv, cancellationToken } = this.createDetachedChildEnvironment();
 
     const task: Task<T> = {
       cancel: () => cancellationToken.cancel(),
-      result: f(childEnv, ...args),
+      result:
+        effectOrEffectCreator instanceof BoundEffect
+          ? effectOrEffectCreator.run(childEnv, ...effectOrEffectCreator.args)
+          : effectOrEffectCreator.func(childEnv, ...args),
     };
 
     return task;
-  };
+  }
 }
 
 export interface Task<T> {
@@ -108,16 +134,13 @@ export type Effect<StateT, ActionT extends Action, P extends any[], ReturnT> = {
 export function withEnv<StateT, ActionT extends Action, P extends any[], T>(
   f: (env: EnvironmentType<StateT, ActionT>, ...args: P) => T,
 ): Effect<StateT, ActionT, P, T> {
-  // Object.defineProperty(f, 'name', { value: arguments.callee.name });
-
   return {
     type: 'call-func-with-env-effect',
     func: f,
-    // run (...args) => env
   };
 }
 
-export abstract class EffectCreator3<Env, Params extends any[], ReturnType> {
+export abstract class BoundEffect<Env, Params extends any[], ReturnType> {
   public readonly args: Params;
 
   constructor(...args: Params) {
