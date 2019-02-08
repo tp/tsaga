@@ -9,7 +9,6 @@ import {
   SagaEnvironment,
   AnySaga, WaitForAction,
 } from './types';
-export { testSaga, runs, selects, forks, spawns } from './testHelpers';
 export { testSagaWithState } from './stateBasedTestHelper';
 
 export {

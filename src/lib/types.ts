@@ -10,6 +10,18 @@ export interface Task<T> {
 
 export type WaitForAction = <Payload>(actionCreator: ActionCreator<Payload>) => Promise<Action<Payload>>;
 
+export type FuncWithEnv<State, Args extends any[], T> = (env: SagaEnvironment<State>, ...args: Args) => T;
+
+export abstract class BoundEffect<Env, Params extends any[], ReturnType> {
+  public readonly args: Params;
+
+  constructor(...args: Params) {
+    this.args = args;
+  }
+
+  public abstract run(run: Env, ...args: Params): ReturnType;
+}
+
 export interface SagaEnvironment<State> {
   /**
    * Dispatch an action to the store from a saga.
@@ -30,12 +42,21 @@ export interface SagaEnvironment<State> {
   ): T;
 
   /**
-   * Run a function. This is only a wrapper for cancellation and mocking in tests.
+   * Call a function. This is only a wrapper for cancellation and mocking in tests.
    *
    * @param f - The function to execute.
    * @param params - The arguments for the function.
    */
-  run<T, Args extends any[]>(f: (...params: Args) => T, ...params: Args): T;
+  call<T, Args extends any[]>(f: (...params: Args) => T, ...params: Args): T;
+
+  /**
+   * Runs the given saga as an attached child.
+   * Cancelling the parent will also cancel the child at the next opportunity.
+   */
+  run<Args extends any[], T>(
+    effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,
+    ...args: typeof effectOrEffectCreator extends BoundEffect<any, any, any> ? never : Args
+  ): T;
 
   /**
    * Wait for an action to be dispatched.
@@ -45,21 +66,14 @@ export interface SagaEnvironment<State> {
   take<Payload>(actionCreator: ActionCreator<Payload>): Promise<Payload>;
 
   /**
-   * Run a function with the current saga environment as the first argument.
+   * Spawns the saga in a new context, returning a detached task
    *
-   * @param f - The function to execute.
-   * @param args - Additional arguments for the function.
+   * Cancelling this `Task` will not cancel the parent.
    */
-  spawn<Args extends any[], T>(f: (env: SagaEnvironment<State>, ...args: Args) => T, ...args: Args): T;
-
-  /**
-   * Fork the environment and run a function in the child env.
-   * This function is cancelable without cancelling of the parent saga.
-   *
-   * @param f - The function which will be called with the child env.
-   * @param args - Additional arguments for the function.
-   */
-  fork<Args extends any[], T>(f: (env: SagaEnvironment<State>, ...args: Args) => T, ...args: Args): Task<T>;
+  spawn<T, Args extends any[]>(
+    effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,
+    ...args: typeof effectOrEffectCreator extends BoundEffect<any, any, any> ? never : Args
+  ): Task<T>;
 }
 
 export interface Saga<State, Payload> {

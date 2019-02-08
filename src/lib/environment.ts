@@ -1,7 +1,7 @@
 import { MiddlewareAPI } from 'redux';
 import { CancellationToken } from './CancellationToken';
 import { SagaCancelledError } from './SagaCancelledError';
-import { SagaEnvironment, WaitForAction } from './types';
+import { SagaEnvironment, WaitForAction, BoundEffect, FuncWithEnv } from './types';
 
 export function createSagaEnvironment<State>(
   store: MiddlewareAPI<any, State>,
@@ -25,7 +25,7 @@ export function createSagaEnvironment<State>(
       return selector(store.getState(), ...args);
     },
 
-    run(f, ...params) {
+    call(f, ...params) {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
@@ -33,8 +33,14 @@ export function createSagaEnvironment<State>(
       return f(...params);
     },
 
-    spawn(f, ...args) {
-      return f(env, ...args);
+    run(effectOrEffectCreator, ...args) {
+      if (cancellationToken && cancellationToken.canceled) {
+        throw new SagaCancelledError(`Saga has been cancelled`);
+      }
+
+      return effectOrEffectCreator instanceof BoundEffect
+        ? effectOrEffectCreator.run(env, ...effectOrEffectCreator.args)
+        : effectOrEffectCreator(env, ...args);
     },
 
     async take(actionCreator) {
@@ -47,7 +53,7 @@ export function createSagaEnvironment<State>(
       return action.payload;
     },
 
-    fork(f, ...args) {
+    spawn(effectOrEffectCreator, ...args) {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
@@ -57,7 +63,9 @@ export function createSagaEnvironment<State>(
 
       return {
         cancel: () => childCancellationToken.cancel(),
-        result: f(childEnv, ...args),
+        result: effectOrEffectCreator instanceof BoundEffect
+          ? effectOrEffectCreator.run(childEnv, ...effectOrEffectCreator.args)
+          : effectOrEffectCreator(childEnv, ...args),
       };
     }
   };
