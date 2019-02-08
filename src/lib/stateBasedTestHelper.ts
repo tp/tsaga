@@ -1,5 +1,6 @@
 import { Selector } from 'reselect';
-import { SagaEnvironment, Saga, AnySaga } from './types';
+import { AnySaga, Saga } from '.';
+import { Environment, EnvironmentType, BoundEffect, Task, SagaFunc } from './environment';
 import { deepStrictEqual } from 'assert';
 import { ActionCreator, isType, Action } from 'typescript-fsa';
 
@@ -13,7 +14,9 @@ import { ActionCreator, isType, Action } from 'typescript-fsa';
 // TODO: Affordances for effects and effect creators
 // TODO: Do we need plain effect in here? Or should always creators be passed?
 // Otherwise the call-site could be written as either `run(f, x)` or `run(f(x))`…
-export function runs<P extends any[], T>(f: (...args: P) => T): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
+export function calls<P extends any[], T>(
+  f: (...params: P) => T,
+): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
   // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
   return {
     receiving: (value) => {
@@ -26,15 +29,15 @@ export function runs<P extends any[], T>(f: (...args: P) => T): ValueMockBuilder
   };
 }
 
-export function spawns<P extends any[], T>(
-  f: (env: SagaEnvironment<any>, ...args: P) => T,
-): ValueMockBuilder<T extends Promise<infer PT> ? PT : T> {
-  // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
+export function spawns<StateT, ActionT extends Action, P extends any[], T>(
+  effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
+): ValueMockBuilder<T> {
+  // extends Promise<infer PT> ? PT : T
   return {
     receiving: (value) => {
       return {
         type: 'spawn',
-        func: f,
+        funcOrBoundEffect: effectOrEffectCreator,
         value: value,
       };
     },
@@ -43,24 +46,26 @@ export function spawns<P extends any[], T>(
 
 type ReturnedPromiseResolvedType<T> = T extends (...args: any[]) => Promise<infer R> ? R : never;
 
-export function selects<T extends (...args: any[]) => any>(f: T): ValueMockBuilder<ReturnType<T>> {
+export function selects<T>(selector: (state: any) => T): ValueMockBuilder<T> {
   return {
-    receiving: (value): ValueMock<ReturnType<T>> => {
+    receiving: (value): ValueMock<T> => {
       return {
         type: 'select',
-        func: f,
+        selector,
         value,
       };
     },
   };
 }
 
-export function forks<T extends (...args: any[]) => any>(f: T): ValueMockBuilder<ReturnType<T>> {
+export function runs<StateT, ActionT extends Action, P extends any[], T>(
+  funcOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
+): ValueMockBuilder<T> {
   return {
-    receiving: (value): ValueMock<ReturnType<T>> => {
+    receiving: (value): ValueMock<T> => {
       return {
-        type: 'select',
-        func: f,
+        type: 'run',
+        funcOrBoundEffect: funcOrEffectCreator,
         value,
       };
     },
@@ -71,11 +76,27 @@ type ValueMockBuilder<T> = {
   receiving: (value: T) => ValueMock<T>;
 };
 
-type ValueMock<T> = {
-  type: 'select' | 'call' | 'spawn' | 'fork';
-  func: Function;
-  value: T;
-};
+type ValueMock<T> =
+  | {
+      type: 'call';
+      func: Function;
+      value: T;
+    }
+  | {
+      type: 'run';
+      funcOrBoundEffect: BoundEffect<Environment<any, any>, any, any> | SagaFunc<any, any, any, any>;
+      value: T;
+    }
+  | {
+      type: 'select';
+      selector: Function;
+      value: T;
+    }
+  | {
+      type: 'spawn';
+      funcOrBoundEffect: BoundEffect<Environment<any, any>, any, T> | SagaFunc<any, any, any, T>;
+      value: T;
+    };
 
 interface SagaTest1 {
   with: (action: any) => SagaTest2;
@@ -107,9 +128,9 @@ export async function testSagaWithState<StateT, Payload>(
   reducer: (state: StateT | undefined, action: Action<any>) => StateT,
   finalState: StateT,
 ) {
-  // if (!isType(initialAction, saga.actionCreator)) {
-  //   throw new Error(`Initial action does not match expected type`);
-  // }
+  if (!isType(initialAction, saga.actionCreator)) {
+    throw new Error(`Initial action does not match expected type`);
+  }
 
   let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
   // TODO: Shouldn't the initial action be run through the reducers before hitting the saga?
@@ -126,31 +147,32 @@ export async function testSagaWithState<StateT, Payload>(
     });
   }
 
-  const testContext: SagaEnvironment<any> = {
-    run: (f: Function, ...args: any[]) => {
+  const testContext: EnvironmentType<any, Action> = {
+    call: <T, P extends any[]>(f: (...params: P) => T, ...params: P) => {
       for (const effect of mocks) {
-        if (effect.type === 'call' && effect.func === f /* TODO: & check args */) {
+        if (effect.type === 'call' && effect.func === f) {
+          /* TODO: & check args */
           return effect.value;
         }
       }
 
-      console.error(`run: calling through`);
+      console.info(`run: calling through`);
 
-      return f(...args);
+      return f(...params);
     },
-    select: (selector: Function, ...args: any[]) => {
+    select: <T, P extends any[]>(selector: (state: StateT, ...p: P) => T, ...args: P): T => {
       for (const effect of mocks) {
-        if (effect.type === 'select' && effect.func === selector) {
+        if (effect.type === 'select' && effect.selector === selector) {
           return effect.value;
         }
       }
 
-      console.error(`select: calling through`);
+      console.info(`select: calling through`);
 
       return selector(state, ...args);
     },
-    dispatch: (action) => {
-      console.log(`test env dispatch`, action);
+    dispatch: (action: Action) => {
+      console.info(`test env dispatch`, action);
 
       state = reducer(state, action);
 
@@ -161,29 +183,63 @@ export async function testSagaWithState<StateT, Payload>(
       }
       awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
     },
-    fork: (f: Function, ...args: any[]) => {
+    spawn: <P extends any[], T>(
+      funcOrBoundEffect: BoundEffect<Environment<StateT, Action>, P, T> | SagaFunc<StateT, Action, P, T>,
+      ...args: P
+    ): Task<T> => {
       // TODO: Create detached context / add cancellation to tests?
       for (const effect of mocks) {
-        if (effect.type === 'fork' && effect.func === f) {
-          return effect.value;
+        if (effect.type === 'spawn') {
+          if (funcOrBoundEffect instanceof BoundEffect) {
+            if (effect.funcOrBoundEffect instanceof BoundEffect) {
+              if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
+                return effect.value;
+              }
+            }
+          } else if (effect.funcOrBoundEffect === funcOrBoundEffect) {
+            return effect.value;
+          }
         }
       }
 
-      console.error(`fork: calling through`);
+      console.info(`spawn: calling through`);
 
-      return f(testContext, ...args);
-      // throw new Error(`Not implemented: fork`);
+      // TODO
+      const result =
+        funcOrBoundEffect instanceof BoundEffect
+          ? funcOrBoundEffect.run(testContext as any /* TODO */, ...funcOrBoundEffect.args)
+          : funcOrBoundEffect(testContext, ...args);
+
+      return {
+        cancel: () => {},
+        result: result,
+      };
     },
-    spawn: (f: Function, ...args: any[]) => {
+    run: <P extends any[], T>(
+      funcOrBoundEffect: BoundEffect<Environment<StateT, Action>, P, T> | SagaFunc<StateT, Action, P, T>,
+      ...args: P
+    ): T => {
       for (const effect of mocks) {
-        if (effect.type === 'spawn' && effect.func === f) {
-          return effect.value;
+        if (effect.type === 'run') {
+          if (funcOrBoundEffect instanceof BoundEffect) {
+            if (effect.funcOrBoundEffect instanceof BoundEffect) {
+              if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
+                return effect.value;
+              }
+            }
+          } else if (effect.funcOrBoundEffect === funcOrBoundEffect) {
+            return effect.value;
+          }
         }
       }
 
-      console.error(`spawn: calling through`);
+      console.info(`run: calling through`);
 
-      return f(testContext, ...args);
+      if (funcOrBoundEffect instanceof BoundEffect) {
+        return funcOrBoundEffect.run(testContext as any /* TODO */, ...funcOrBoundEffect.args);
+      } else {
+        return funcOrBoundEffect(testContext, ...args);
+      }
     },
     take: <T>(actionCreator: ActionCreator<T>): Promise<T> => {
       return waitForMessage(actionCreator);
@@ -197,10 +253,10 @@ export async function testSagaWithState<StateT, Payload>(
      * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
      */
     testContext,
-    initialPayload,
+    initialAction.payload,
   );
 
   deepStrictEqual(state, finalState);
 
-  console.error('saga done');
+  console.info('saga done');
 }
