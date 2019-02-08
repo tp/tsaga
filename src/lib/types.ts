@@ -1,7 +1,4 @@
-import {
-  Action,
-  ActionCreator,
-} from 'typescript-fsa';
+import { Action, ActionCreator } from 'typescript-fsa';
 
 export interface Task<T> {
   result: T;
@@ -36,10 +33,7 @@ export interface SagaEnvironment<State> {
    * @param selector - The selector to call.
    * @param args - Additional arguments which will be passed to the selector after the state.
    */
-  select<T, Args extends any[]>(
-    selector: (state: State, ...args: Args) => T,
-    ...args: Args
-  ): T;
+  select<T, Args extends any[]>(selector: (state: State, ...args: Args) => T, ...args: Args): T;
 
   /**
    * Call a function. This is only a wrapper for cancellation and mocking in tests.
@@ -68,7 +62,7 @@ export interface SagaEnvironment<State> {
   /**
    * Spawns the saga in a new context, returning a detached task
    *
-   * Cancelling this `Task` will not cancel the parent.
+   * Cancelling the returned `Task` will not cancel the parent.
    */
   spawn<T, Args extends any[]>(
     effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,

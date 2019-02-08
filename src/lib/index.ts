@@ -3,18 +3,10 @@ import { ActionCreator, isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
+import { Saga, SagaEnvironment, AnySaga, WaitForAction } from './types';
 
-import {
-  Saga,
-  SagaEnvironment,
-  AnySaga, WaitForAction,
-} from './types';
 export { testSagaWithState, calls, runs, selects } from './stateBasedTestHelper';
-
-export {
-  SagaEnvironment,
-  Saga,
-};
+export { SagaEnvironment, Saga };
 
 export function createTypedForEvery<State>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
@@ -51,7 +43,6 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
   const waitForAction: WaitForAction = (actionCreator) => {
     return new Promise((resolve) => {
       awaitingMessages.push({ actionCreator: actionCreator, promiseResolve: resolve });
-      console.error(`awaitingMessages`, awaitingMessages);
     });
   };
 
@@ -80,12 +71,7 @@ export function tsagaReduxMiddleware(sagas: AnySaga[]) {
               cancellationTokens.set(saga, cancellationToken);
             }
 
-            const context = createSagaEnvironment(
-              api,
-              waitForAction,
-              cancellationToken,
-            );
-            // console.error(`action matches expected creator`, action, `running saga`);
+            const context = createSagaEnvironment(api, waitForAction, cancellationToken);
 
             sagaPromises.push(
               saga
