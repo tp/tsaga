@@ -7,7 +7,6 @@ import { Action } from './types';
 export { Task, BoundEffect, EnvironmentType } from './environment';
 export { Action } from './types';
 export { Environment };
-export { testSaga } from './testHelpers';
 export { testSagaWithState, runs, selects, calls, spawns } from './stateBasedTestHelper';
 
 export interface Saga<StateT, ActionT extends Action, Payload> {
