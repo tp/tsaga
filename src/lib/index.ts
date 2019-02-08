@@ -9,7 +9,7 @@ import {
   SagaEnvironment,
   AnySaga, WaitForAction,
 } from './types';
-export { testSagaWithState } from './stateBasedTestHelper';
+export { testSagaWithState, calls, runs, selects } from './stateBasedTestHelper';
 
 export {
   SagaEnvironment,
