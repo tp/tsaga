@@ -1,9 +1,8 @@
 import { createTypedForEvery, createTypedForLatest } from '../lib';
-import { Action } from '../lib/types';
 import { AppState } from './types';
-import { EnvironmentType } from '../lib/environment';
+import { SagaEnvironment } from '../lib';
 
 // Know the store here already? Or add that later?
-export const forEvery = createTypedForEvery<AppState, Action>();
-export const forLatest = createTypedForLatest<AppState, Action>();
-export type AppEnv = EnvironmentType<AppState, Action>;
+export const forEvery = createTypedForEvery<AppState>();
+export const forLatest = createTypedForLatest<AppState>();
+export type AppEnv = SagaEnvironment<AppState>;

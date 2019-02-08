@@ -1,18 +1,17 @@
 import * as nock from 'nock';
-import { watchForUserSelectorToCountIfNotChangedWithing3s, increaseCounter } from '../sagas/user-sagas';
-import { userSelected } from '../actions';
+import { watchForUserSelectorToCountIfNotChangedWithing3s } from '../sagas/user-sagas';
 import { userReducer } from '../reducers';
 
 import { sleep } from '../app-library';
 import { getCount } from '../selectors';
-import { testSagaWithState, calls, runs, selects } from '../../lib';
+import { testSagaWithState, calls, selects } from '../../lib';
 
 nock.disableNetConnect();
 
 test('Test helper with mocked sleep call', async () => {
   return testSagaWithState(
     watchForUserSelectorToCountIfNotChangedWithing3s,
-    userSelected({ id: 2 }),
+    { id: 2 },
     [calls(sleep).receiving()],
     undefined,
     userReducer,
@@ -23,7 +22,7 @@ test('Test helper with mocked sleep call', async () => {
 test('Test helper with mocked select', async () => {
   return testSagaWithState(
     watchForUserSelectorToCountIfNotChangedWithing3s,
-    userSelected({ id: 2 }),
+    { id: 2 },
     [calls(sleep).receiving(), selects(getCount).receiving(5)],
     undefined,
     userReducer,

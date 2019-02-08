@@ -1,9 +1,7 @@
-import { Selector } from 'reselect';
-import { AnySaga, Saga } from '.';
-import { Environment, EnvironmentType, BoundEffect, Task, SagaFunc } from './environment';
+import { Saga, SagaEnvironment } from '.';
 import { deepStrictEqual } from 'assert';
-import { Action } from './types';
-import { ActionCreator, isType } from 'typescript-fsa';
+import { ActionCreator, isType, Action } from 'typescript-fsa';
+import { BoundEffect, FuncWithEnv, Task } from './types';
 
 // type SilentAssertion = {
 //   type: 'dispatch',
@@ -30,8 +28,8 @@ export function calls<P extends any[], T>(
   };
 }
 
-export function spawns<StateT, ActionT extends Action, P extends any[], T>(
-  effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
+export function spawns<State, P extends any[], T>(
+  effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, P, T> | FuncWithEnv<State, P, T>,
 ): ValueMockBuilder<T> {
   // extends Promise<infer PT> ? PT : T
   return {
@@ -59,8 +57,8 @@ export function selects<T>(selector: (state: any) => T): ValueMockBuilder<T> {
   };
 }
 
-export function runs<StateT, ActionT extends Action, P extends any[], T>(
-  funcOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
+export function runs<State, P extends any[], T>(
+  funcOrEffectCreator: BoundEffect<SagaEnvironment<State>, P, T> | FuncWithEnv<State, P, T>,
 ): ValueMockBuilder<T> {
   return {
     receiving: (value): ValueMock<T> => {
@@ -85,7 +83,7 @@ type ValueMock<T> =
     }
   | {
       type: 'run';
-      funcOrBoundEffect: BoundEffect<Environment<any, any>, any, any> | SagaFunc<any, any, any, any>;
+      funcOrBoundEffect: BoundEffect<SagaEnvironment<any>, any, any> | FuncWithEnv<any, any, any>;
       value: T;
     }
   | {
@@ -95,7 +93,7 @@ type ValueMock<T> =
     }
   | {
       type: 'spawn';
-      funcOrBoundEffect: BoundEffect<Environment<any, any>, any, T> | SagaFunc<any, any, any, T>;
+      funcOrBoundEffect: BoundEffect<SagaEnvironment<any>, any, T> | FuncWithEnv<any, any, T>;
       value: T;
     };
 
@@ -115,24 +113,14 @@ interface SagaTestBuilder4 {
   forReducer: (reducer: Function) => Promise<void>;
 }
 
-interface SagaEnv<StateT, ActionT> {
-  call: <T extends (...args: any[]) => any>(f: T) => ReturnType<T>;
-  select: <R>(s: Selector<StateT, R>) => R;
-  dispatch: (action: ActionT) => void;
-}
-
 export async function testSagaWithState<StateT, Payload>(
-  saga: Saga<StateT, any, Payload>,
-  initialAction: Action<Payload>,
+  saga: Saga<StateT, Payload>,
+  initialPayload: Payload,
   mocks: ValueMock<any>[],
   initialState: StateT | undefined,
-  reducer: (state: StateT | undefined, action: Action) => StateT,
+  reducer: (state: StateT | undefined, action: Action<any>) => StateT,
   finalState: StateT,
 ) {
-  if (!isType(initialAction, saga.actionCreator)) {
-    throw new Error(`Initial action does not match expected type`);
-  }
-
   let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
   // TODO: Shouldn't the initial action be run through the reducers before hitting the saga?
   // state = reducer(initialState, initialAction);
@@ -148,7 +136,7 @@ export async function testSagaWithState<StateT, Payload>(
     });
   }
 
-  const testContext: EnvironmentType<any, Action> = {
+  const testContext: SagaEnvironment<any> = {
     call: <T, P extends any[]>(f: (...params: P) => T, ...params: P) => {
       for (const effect of mocks) {
         if (effect.type === 'call' && effect.func === f) {
@@ -174,7 +162,7 @@ export async function testSagaWithState<StateT, Payload>(
 
       return selector(state, ...args);
     },
-    dispatch: (action: Action) => {
+    dispatch: (action) => {
       console.info(`test env dispatch`, action);
 
       state = reducer(state, action);
@@ -187,7 +175,7 @@ export async function testSagaWithState<StateT, Payload>(
       awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
     },
     spawn: <P extends any[], T>(
-      funcOrBoundEffect: BoundEffect<Environment<StateT, Action>, P, T> | SagaFunc<StateT, Action, P, T>,
+      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, P, T> | FuncWithEnv<StateT, P, T>,
       ...args: P
     ): Task<T> => {
       // TODO: Create detached context / add cancellation to tests?
@@ -221,7 +209,7 @@ export async function testSagaWithState<StateT, Payload>(
       };
     },
     run: <P extends any[], T>(
-      funcOrBoundEffect: BoundEffect<Environment<StateT, Action>, P, T> | SagaFunc<StateT, Action, P, T>,
+      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, P, T> | FuncWithEnv<StateT, P, T>,
       ...args: P
     ): T => {
       for (const effect of mocks) {
@@ -260,7 +248,7 @@ export async function testSagaWithState<StateT, Payload>(
      * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
      */
     testContext,
-    initialAction.payload,
+    initialPayload,
   );
 
   if (mocks.length) {
