@@ -153,6 +153,7 @@ export async function testSagaWithState<StateT, Payload>(
       for (const effect of mocks) {
         if (effect.type === 'call' && effect.func === f) {
           /* TODO: & check args */
+          mocks = mocks.filter((e) => e !== effect);
           return effect.value;
         }
       }
@@ -164,6 +165,7 @@ export async function testSagaWithState<StateT, Payload>(
     select: <T, P extends any[]>(selector: (state: StateT, ...p: P) => T, ...args: P): T => {
       for (const effect of mocks) {
         if (effect.type === 'select' && effect.selector === selector) {
+          mocks = mocks.filter((e) => e !== effect);
           return effect.value;
         }
       }
@@ -194,10 +196,12 @@ export async function testSagaWithState<StateT, Payload>(
           if (funcOrBoundEffect instanceof BoundEffect) {
             if (effect.funcOrBoundEffect instanceof BoundEffect) {
               if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
+                mocks = mocks.filter((e) => e !== effect);
                 return effect.value;
               }
             }
           } else if (effect.funcOrBoundEffect === funcOrBoundEffect) {
+            mocks = mocks.filter((e) => e !== effect);
             return effect.value;
           }
         }
@@ -225,10 +229,12 @@ export async function testSagaWithState<StateT, Payload>(
           if (funcOrBoundEffect instanceof BoundEffect) {
             if (effect.funcOrBoundEffect instanceof BoundEffect) {
               if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
+                mocks = mocks.filter((e) => e !== effect);
                 return effect.value;
               }
             }
           } else if (effect.funcOrBoundEffect === funcOrBoundEffect) {
+            mocks = mocks.filter((e) => e !== effect);
             return effect.value;
           }
         }
@@ -256,6 +262,11 @@ export async function testSagaWithState<StateT, Payload>(
     testContext,
     initialAction.payload,
   );
+
+  if (mocks.length) {
+    console.error(`Unused mocks after the saga completed`, mocks);
+    throw new Error(`Unused mocks after the saga completed`);
+  }
 
   deepStrictEqual(state, finalState);
 

@@ -82,8 +82,9 @@ export class Environment<StateT, ActionT extends Action> {
     effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
     ...args: P
   ): T {
-    // TODO: Add overload for (env: Env, ...) => T
-    // Can we get rid of `withEnv` then?
+    if (this.cancellationToken && this.cancellationToken.canceled) {
+      throw new SagaCancelledError(`Saga has been cancelled`);
+    }
 
     if (effectOrEffectCreator instanceof BoundEffect) {
       return effectOrEffectCreator.run(this, ...effectOrEffectCreator.args);
@@ -106,6 +107,10 @@ export class Environment<StateT, ActionT extends Action> {
     effectOrEffectCreator: BoundEffect<Environment<StateT, ActionT>, P, T> | SagaFunc<StateT, ActionT, P, T>,
     ...args: P
   ): Task<T> {
+    if (this.cancellationToken && this.cancellationToken.canceled) {
+      throw new SagaCancelledError(`Saga has been cancelled`);
+    }
+
     const { childEnv, cancellationToken } = this.createDetachedChildEnvironment();
 
     const task: Task<T> = {
