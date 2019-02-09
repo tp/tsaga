@@ -1,23 +1,29 @@
 import { Action, ActionCreator } from 'typescript-fsa';
 
-export interface Task<T> {
-  result: T;
+export interface Task<ReturnType> {
+  result: ReturnType;
   cancel: () => void;
 }
 
 export type WaitForAction = <Payload>(actionCreator: ActionCreator<Payload>) => Promise<Action<Payload>>;
 
-export type FuncWithEnv<State, Args extends any[], T> = (env: SagaEnvironment<State>, ...args: Args) => T;
+export abstract class BoundEffect<State, Args extends any[], ReturnType> {
+  public readonly args: Args;
 
-export abstract class BoundEffect<Env, Params extends any[], ReturnType> {
-  public readonly args: Params;
-
-  constructor(...args: Params) {
+  constructor(...args: Args) {
     this.args = args;
   }
 
-  public abstract run(run: Env, ...args: Params): ReturnType;
+  public abstract run(env: SagaEnvironment<State>, ...args: Args): ReturnType;
 }
+
+export interface BoundFunc<State, Args extends any[], ReturnType> {
+  (env: SagaEnvironment<State>, ...args: Args): ReturnType;
+}
+
+export type Effect<State, Args extends any[], ReturnType> =
+  | BoundEffect<State, Args, ReturnType>
+  | BoundFunc<State, Args, ReturnType>;
 
 export interface SagaEnvironment<State> {
   /**
@@ -33,22 +39,33 @@ export interface SagaEnvironment<State> {
    * @param selector - The selector to call.
    * @param args - Additional arguments which will be passed to the selector after the state.
    */
-  select<T, Args extends any[]>(selector: (state: State, ...args: Args) => T, ...args: Args): T;
+  select<Args extends any[], ReturnType>(
+    selector: (state: State, ...args: Args) => ReturnType,
+    ...args: Args
+  ): ReturnType;
 
   /**
    * Call a function. This is only a wrapper for cancellation and mocking in tests.
    *
    * @param f - The function to execute.
-   * @param params - The arguments for the function.
+   * @param args - The arguments for the function.
    */
-  call<T, Args extends any[]>(f: (...params: Args) => T, ...params: Args): T;
+  call<Args extends any[], ReturnType>(
+    f: (...args: Args) => ReturnType,
+    ...args: Args
+  ): ReturnType;
 
   /**
    * Runs the given saga as an attached child.
    * Cancelling the parent will also cancel the child at the next opportunity.
    */
-  run<Args extends any[], T>(effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T>, ...args: []): T;
-  run<Args extends any[], T>(effectOrEffectCreator: FuncWithEnv<State, Args, T>, ...args: Args): T;
+  run<Args extends any[], ReturnType>(
+    effect: BoundFunc<State, Args, ReturnType>,
+    ...args: Args
+  ): ReturnType;
+  run<Args extends any[], ReturnType>(
+    effect: BoundEffect<State, Args, ReturnType>,
+  ): ReturnType,
 
   /**
    * Wait for an action to be dispatched.
@@ -62,10 +79,13 @@ export interface SagaEnvironment<State> {
    *
    * Cancelling the returned `Task` will not cancel the parent.
    */
-  spawn<T, Args extends any[]>(
-    effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,
-    ...args: typeof effectOrEffectCreator extends BoundEffect<SagaEnvironment<State>, Args, T> ? [] : Args
-  ): Task<T>;
+  spawn<Args extends any[], ReturnType>(
+    effect: BoundFunc<State, Args, ReturnType>,
+    ...args: Args
+  ): ReturnType;
+  spawn<Args extends any[], ReturnType>(
+    effect: BoundEffect<State, Args, ReturnType>,
+  ): ReturnType,
 }
 
 export interface Saga<State, Payload> {

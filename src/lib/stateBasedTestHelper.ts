@@ -1,7 +1,8 @@
-import { Saga, SagaEnvironment } from '.';
+import { Saga, SagaEnvironment, Task } from '.';
 import { deepStrictEqual } from 'assert';
 import { ActionCreator, isType, Action } from 'typescript-fsa';
-import { BoundEffect, FuncWithEnv, Task } from './types';
+import { Effect } from './types';
+import { isBoundEffect } from './utils';
 
 export function calls<P extends any[], T>(
   f: (...params: P) => T,
@@ -18,9 +19,9 @@ export function calls<P extends any[], T>(
   };
 }
 
-export function spawns<State, P extends any[], T>(
-  effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, P, T> | FuncWithEnv<State, P, T>,
-): ValueMockBuilder<State, T> {
+export function spawns<State, Args extends any[], ReturnType>(
+  effectOrEffectCreator: Effect<State, Args, ReturnType>,
+): ValueMockBuilder<State, ReturnType> {
   // extends Promise<infer PT> ? PT : T
   return {
     receiving: (value) => {
@@ -32,8 +33,6 @@ export function spawns<State, P extends any[], T>(
     },
   };
 }
-
-type ReturnedPromiseResolvedType<T> = T extends (...args: any[]) => Promise<infer R> ? R : never;
 
 export function selects<State, T>(selector: (state: State) => T): ValueMockBuilder<State, T> {
   return {
@@ -47,11 +46,11 @@ export function selects<State, T>(selector: (state: State) => T): ValueMockBuild
   };
 }
 
-export function runs<State, P extends any[], T>(
-  funcOrEffectCreator: BoundEffect<SagaEnvironment<State>, P, T> | FuncWithEnv<State, P, T>,
-): ValueMockBuilder<State, T> {
+export function runs<State, Args extends any[], ReturnType>(
+  funcOrEffectCreator: Effect<State, Args, ReturnType>,
+): ValueMockBuilder<State, ReturnType> {
   return {
-    receiving: (value): ValueMock<State, T> => {
+    receiving: (value): ValueMock<State, ReturnType> => {
       return {
         type: 'run',
         funcOrBoundEffect: funcOrEffectCreator,
@@ -61,39 +60,39 @@ export function runs<State, P extends any[], T>(
   };
 }
 
-type ValueMockBuilder<StateT, T> = {
-  receiving: (value: T) => ValueMock<StateT, T>;
+type ValueMockBuilder<State, ReturnType> = {
+  receiving: (value: ReturnType) => ValueMock<State, ReturnType>;
 };
 
-type ValueMock<StateT, T> =
+type ValueMock<State, ReturnType> =
   | {
       type: 'call';
       func: Function /* TODO: Stricter types */;
-      value: T;
+      value: ReturnType;
     }
   | {
       type: 'run';
-      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, any, any> | FuncWithEnv<StateT, any, any>;
-      value: T;
+      funcOrBoundEffect: Effect<State, any, ReturnType>;
+      value: ReturnType;
     }
   | {
       type: 'select';
-      selector: (state: StateT) => T;
-      value: T;
+      selector: (state: State) => ReturnType;
+      value: ReturnType;
     }
   | {
       type: 'spawn';
-      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, any, T> | FuncWithEnv<StateT, any, T>;
-      value: T;
+      funcOrBoundEffect: Effect<State, any, ReturnType>;
+      value: ReturnType;
     };
 
-export async function testSagaWithState<StateT, Payload>(
-  saga: Saga<StateT, Payload>,
+export async function testSagaWithState<State, Payload>(
+  saga: Saga<State, Payload>,
   initialAction: Action<Payload>,
-  mocks: ValueMock<StateT, any>[],
-  initialState: StateT | undefined,
-  reducer: (state: StateT | undefined, action: Action<any>) => StateT,
-  finalState: StateT,
+  mocks: ValueMock<State, any>[],
+  initialState: State | undefined,
+  reducer: (state: State | undefined, action: Action<any>) => State,
+  finalState: State,
 ) {
   let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
   state = reducer(initialState, initialAction);
@@ -109,7 +108,7 @@ export async function testSagaWithState<StateT, Payload>(
     });
   }
 
-  const testContext: SagaEnvironment<StateT> = {
+  const testContext: SagaEnvironment<State> = {
     call: (f, ...params) => {
       for (const effect of mocks) {
         if (effect.type === 'call' && effect.func === f) {
@@ -147,12 +146,15 @@ export async function testSagaWithState<StateT, Payload>(
       }
       awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
     },
-    spawn: (funcOrBoundEffect, ...args) => {
+    spawn: <Args extends any[], ReturnType>(
+      funcOrBoundEffect: Effect<State, Args, ReturnType>,
+      ...args: Args
+    ): Task<ReturnType> => {
       // TODO: Create detached context / add cancellation to tests?
       for (const effect of mocks) {
         if (effect.type === 'spawn') {
-          if (funcOrBoundEffect instanceof BoundEffect) {
-            if (effect.funcOrBoundEffect instanceof BoundEffect) {
+          if (isBoundEffect(funcOrBoundEffect)) {
+            if (isBoundEffect(effect.funcOrBoundEffect)) {
               if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
                 mocks = mocks.filter((e) => e !== effect);
                 return effect.value;
@@ -166,7 +168,7 @@ export async function testSagaWithState<StateT, Payload>(
       }
 
       const result =
-        funcOrBoundEffect instanceof BoundEffect
+        isBoundEffect(funcOrBoundEffect)
           ? funcOrBoundEffect.run(testContext, ...funcOrBoundEffect.args)
           : funcOrBoundEffect(testContext, ...args);
 
@@ -175,14 +177,14 @@ export async function testSagaWithState<StateT, Payload>(
         result: result,
       };
     },
-    run: <Args extends any[], T>(
-      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, Args, T> | FuncWithEnv<StateT, Args, T>,
-      ...args: typeof funcOrBoundEffect extends BoundEffect<any, any, any> ? never : Args
-    ): T => {
+    run: <Args extends any[], ReturnType>(
+      funcOrBoundEffect: Effect<State, Args, ReturnType>,
+      ...args: Args
+    ): ReturnType => {
       for (const effect of mocks) {
         if (effect.type === 'run') {
-          if (funcOrBoundEffect instanceof BoundEffect) {
-            if (effect.funcOrBoundEffect instanceof BoundEffect) {
+          if (isBoundEffect(funcOrBoundEffect)) {
+            if (isBoundEffect(effect.funcOrBoundEffect)) {
               if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
                 mocks = mocks.filter((e) => e !== effect);
                 return effect.value;
@@ -195,8 +197,8 @@ export async function testSagaWithState<StateT, Payload>(
         }
       }
 
-      if (funcOrBoundEffect instanceof BoundEffect) {
-        return funcOrBoundEffect.run(testContext as any /* TODO */, ...funcOrBoundEffect.args);
+      if (isBoundEffect(funcOrBoundEffect)) {
+        return funcOrBoundEffect.run(testContext, ...funcOrBoundEffect.args);
       } else {
         return funcOrBoundEffect(testContext, ...args);
       }
@@ -207,11 +209,6 @@ export async function testSagaWithState<StateT, Payload>(
   };
 
   await saga.innerFunction(
-    /**
-     * Fine, since the outside interface is equal, it's just not of the same `class`
-     *
-     * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
-     */
     testContext,
     initialAction.payload,
   );
