@@ -1,9 +1,17 @@
-import { Middleware } from 'redux';
 import { ActionCreator, isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
-import { Saga, SagaEnvironment, AnySaga, WaitForAction, BoundEffect, Task } from './types';
+import {
+  Saga,
+  SagaEnvironment,
+  AnySaga,
+  WaitForAction,
+  BoundEffect,
+  Task,
+  SagaMiddleware,
+  AwaitingAction,
+} from './types';
 
 export { testSagaWithState, calls, runs, selects } from './stateBasedTestHelper';
 export { SagaEnvironment, Saga, BoundEffect, Task, AnySaga };
@@ -34,70 +42,71 @@ export function createTypedForLatest<State>(): <Payload>(
   };
 }
 
-export function tsagaReduxMiddleware(sagas: AnySaga[]) {
-  // TODO: Remove completed sagas from this (currently leaks all results)
-  const sagaPromises: any = [];
+export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
+  const runningSagas = new Map();
+  let id = 0;
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
-  let awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
+  let awaitingActions: AwaitingAction[] = [];
 
   const waitForAction: WaitForAction = (actionCreator) => {
     return new Promise((resolve) => {
-      awaitingMessages.push({ actionCreator: actionCreator, promiseResolve: resolve });
+      awaitingActions.push({ actionCreator, resolve });
     });
   };
 
-  const middleWare: Middleware = (api) => {
-    return function next(next) {
-      return function(action) {
-        next(action);
+  return {
+    middleware: api => next => action => {
+      next(action);
 
-        for (const config of awaitingMessages) {
-          if (isType(action, config.actionCreator)) {
-            config.promiseResolve(action);
-          }
+      awaitingActions = awaitingActions.filter((awaitingAction) => {
+        if (isType(action, awaitingAction.actionCreator)) {
+          awaitingAction.resolve(action);
+
+          return false;
         }
-        awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
 
-        for (const saga of sagas) {
-          if (isType(action, saga.actionCreator)) {
-            let cancellationToken;
-            if (saga.type === 'latest') {
-              const runningSagaCancellationToken = cancellationTokens.get(saga);
-              if (runningSagaCancellationToken) {
-                runningSagaCancellationToken.cancel();
-              }
+        return true;
+      });
 
-              cancellationToken = new CancellationToken();
-              cancellationTokens.set(saga, cancellationToken);
+      for (const saga of sagas) {
+        if (isType(action, saga.actionCreator)) {
+          let cancellationToken;
+          if (saga.type === 'latest') {
+            const runningSagaCancellationToken = cancellationTokens.get(saga);
+            if (runningSagaCancellationToken) {
+              runningSagaCancellationToken.cancel();
             }
 
-            const context = createSagaEnvironment(api, waitForAction, cancellationToken);
-
-            sagaPromises.push(
-              saga
-                .innerFunction(context, action.payload)
-                .then((e) => 'completed')
-                .catch((e) => {
-                  if (e instanceof SagaCancelledError) {
-                    return 'cancelled';
-                  }
-
-                  console.error(`Saga failed`, e);
-                  return 'failed';
-                }),
-            );
+            cancellationToken = new CancellationToken();
+            cancellationTokens.set(saga, cancellationToken);
           }
+
+          const sagaId = id++;
+          const env = createSagaEnvironment(api, waitForAction, cancellationToken);
+
+          runningSagas.set(
+            sagaId,
+            saga
+              .innerFunction(env, action.payload)
+              .then(() => {
+                runningSagas.delete(sagaId);
+
+                return 'completed'
+              })
+              .catch((e) => {
+                runningSagas.delete(sagaId);
+
+                return e instanceof SagaCancelledError ? 'cancelled' : 'failed';
+              }),
+          );
         }
-      };
-    };
+      }
+    },
+
+    async sagaCompletion() {
+      // TODO: Add support to also await forks
+      // For this we would also need to add forks to this map and have a unique id for them.
+      await Promise.all(runningSagas.values());
+    },
   };
-
-  // TODO: Add support to also await forks
-  const sagaCompletion = async (): Promise<void> => {
-    const promises = sagaPromises.slice(0);
-
-    await Promise.all(promises);
-  };
-
-  return { middleware: middleWare, sagaCompletion };
 }
