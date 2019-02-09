@@ -1,6 +1,6 @@
 {
   "name": "tsaga",
-  "version": "0.2.3",
+  "version": "0.3.1",
   "description": "Typesafe and lightweight way to write functions with asynchronous side-effects that are easily testable.",
   "main": "compiled/lib/index.js",
   "repository": "https://github.com/tp/tsaga.git",
@@ -31,7 +31,8 @@
     "lint": "tslint -c tslint.json --project .",
     "ts-check": "tsc -w --noEmit",
     "test": "tsc --noEmit && yarn lint && jest src/test-app",
-    "test:updateSnapshots": "jest --updateSnapshot"
+    "test:updateSnapshots": "jest --updateSnapshot",
+    "prepublishOnly": "rimraf compiled/ && tsc"
   },
   "dependencies": {
     "typescript-fsa": "^3.0.0-beta-2"

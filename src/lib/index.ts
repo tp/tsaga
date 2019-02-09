@@ -3,10 +3,10 @@ import { ActionCreator, isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
-import { Saga, SagaEnvironment, AnySaga, WaitForAction } from './types';
+import { Saga, SagaEnvironment, AnySaga, WaitForAction, BoundEffect, Task } from './types';
 
 export { testSagaWithState, calls, runs, selects } from './stateBasedTestHelper';
-export { SagaEnvironment, Saga };
+export { SagaEnvironment, Saga, BoundEffect, Task, AnySaga };
 
 export function createTypedForEvery<State>(): <Payload>(
   actionCreator: ActionCreator<Payload>,
