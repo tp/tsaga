@@ -175,7 +175,10 @@ export async function testSagaWithState<StateT, Payload>(
         result: result,
       };
     },
-    run: (funcOrBoundEffect, ...args) => {
+    run: <Args extends any[], T>(
+      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, Args, T> | FuncWithEnv<StateT, Args, T>,
+      ...args: typeof funcOrBoundEffect extends BoundEffect<any, any, any> ? never : Args
+    ): T => {
       for (const effect of mocks) {
         if (effect.type === 'run') {
           if (funcOrBoundEffect instanceof BoundEffect) {

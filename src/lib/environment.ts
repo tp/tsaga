@@ -33,7 +33,10 @@ export function createSagaEnvironment<State>(
       return f(...params);
     },
 
-    run(effectOrEffectCreator, ...args) {
+    run<Args extends any[], T>(
+      effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,
+      ...args: typeof effectOrEffectCreator extends BoundEffect<any, any, any> ? never : Args
+    ): T {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
       }

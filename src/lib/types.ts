@@ -47,10 +47,8 @@ export interface SagaEnvironment<State> {
    * Runs the given saga as an attached child.
    * Cancelling the parent will also cancel the child at the next opportunity.
    */
-  run<Args extends any[], T>(
-    effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,
-    ...args: typeof effectOrEffectCreator extends BoundEffect<any, any, any> ? never : Args
-  ): T;
+  run<Args extends any[], T>(effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T>, ...args: []): T;
+  run<Args extends any[], T>(effectOrEffectCreator: FuncWithEnv<State, Args, T>, ...args: Args): T;
 
   /**
    * Wait for an action to be dispatched.
@@ -66,7 +64,7 @@ export interface SagaEnvironment<State> {
    */
   spawn<T, Args extends any[]>(
     effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,
-    ...args: typeof effectOrEffectCreator extends BoundEffect<any, any, any> ? never : Args
+    ...args: typeof effectOrEffectCreator extends BoundEffect<SagaEnvironment<State>, Args, T> ? [] : Args
   ): Task<T>;
 }
 
@@ -77,3 +75,8 @@ export interface Saga<State, Payload> {
 }
 
 export type AnySaga = Saga<any, any>;
+
+// TODO: Add compile check, to prove that overload for `BoundEffect` works with additional parameters
+// const sagaEnv: SagaEnvironment<any> = null as any;
+// const boundEffect: BoundEffect<SagaEnvironment<any>, [number, number], boolean> = null as any;
+// sagaEnv.run(boundEffect);
