@@ -2,7 +2,6 @@ import { MiddlewareAPI } from 'redux';
 import { CancellationToken } from './CancellationToken';
 import { SagaCancelledError } from './SagaCancelledError';
 import { SagaEnvironment, WaitForAction, BoundEffect, FuncWithEnv } from './types';
-import Timeout = NodeJS.Timeout;
 import TimeoutError from './TimeoutError';
 
 function sleep(timeout: number): Promise<'timeout'> {
