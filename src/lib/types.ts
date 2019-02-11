@@ -54,7 +54,9 @@ export interface SagaEnvironment<State> {
    * Wait for an action to be dispatched.
    *
    * @param actionCreator - The action creator of the action to be dispatched.
-   * @param timeout
+   * @param timeout - The timeout after which to fire the TimeoutError,
+   * if no timeout specified, it will wait until the next action is dispatched.
+   * @throws TimeoutError - Throws a TimeoutError when the timeout resolve before the action was fired.
    */
   take<Payload>(actionCreator: ActionCreator<Payload>,  timeout?: number): Promise<Payload>;
 
