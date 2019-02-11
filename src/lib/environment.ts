@@ -2,11 +2,10 @@ import { MiddlewareAPI } from 'redux';
 import { CancellationToken } from './CancellationToken';
 import { SagaCancelledError } from './SagaCancelledError';
 import { SagaEnvironment, WaitForAction, BoundEffect, FuncWithEnv } from './types';
-import Timeout = NodeJS.Timeout;
 import TimeoutError from './TimeoutError';
 
 function sleep(timeout: number): Promise<'timeout'> {
-  return new Promise(resolve => setTimeout(() => resolve('timeout'), timeout))
+  return new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
 }
 
 export function createSagaEnvironment<State>(
@@ -58,10 +57,7 @@ export function createSagaEnvironment<State>(
       }
 
       if (typeof timeout === 'number') {
-        const value = await Promise.race([
-          waitForAction(actionCreator),
-          sleep(timeout),
-        ]);
+        const value = await Promise.race([waitForAction(actionCreator), sleep(timeout)]);
 
         if (value === 'timeout') {
           throw new TimeoutError(actionCreator);
