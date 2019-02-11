@@ -55,8 +55,9 @@ export interface SagaEnvironment<State> {
    * Wait for an action to be dispatched.
    *
    * @param actionCreator - The action creator of the action to be dispatched.
+   * @param timeout
    */
-  take<Payload>(actionCreator: ActionCreator<Payload>): Promise<Payload>;
+  take<Payload>(actionCreator: ActionCreator<Payload>,  timeout?: number): Promise<Payload>;
 
   /**
    * Spawns the saga in a new context, returning a detached task
