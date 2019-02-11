@@ -2,7 +2,8 @@ import { MiddlewareAPI } from 'redux';
 import { CancellationToken } from './CancellationToken';
 import { SagaCancelledError } from './SagaCancelledError';
 import { SagaEnvironment, WaitForAction, BoundEffect, FuncWithEnv } from './types';
-import { ActionCreator } from 'typescript-fsa';
+import Timeout = NodeJS.Timeout;
+import TimeoutError from './TimeoutError';
 
 function sleep(timeout: number): Promise<'timeout'> {
   return new Promise(resolve => setTimeout(() => resolve('timeout'), timeout))
@@ -51,7 +52,7 @@ export function createSagaEnvironment<State>(
         : effectOrEffectCreator(env, ...args);
     },
 
-    async take(actionCreator: ActionCreator<any>, timeout?: number) {
+    async take(actionCreator, timeout) {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
@@ -62,7 +63,11 @@ export function createSagaEnvironment<State>(
           sleep(timeout),
         ]);
 
-        return value === 'timeout' ? value : value.payload;
+        if (value === 'timeout') {
+          throw new TimeoutError(actionCreator);
+        }
+
+        return value.payload;
       }
 
       const action = await waitForAction(actionCreator);
