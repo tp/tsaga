@@ -43,9 +43,9 @@ export function createTypedForLatest<State>(): <Payload>(
 }
 
 export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
-  const runningSagas = new Map();
-  let id = 0;
+  const runningSagas = new Map<number, Promise<any>>();
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
+  let id = 0;
   let awaitingActions: AwaitingAction[] = [];
 
   const waitForAction: WaitForAction = (actionCreator) => {
@@ -55,7 +55,7 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
   };
 
   return {
-    middleware: api => next => action => {
+    middleware: (api) => (next) => (action) => {
       next(action);
 
       awaitingActions = awaitingActions.filter((awaitingAction) => {
@@ -91,7 +91,7 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
               .then(() => {
                 runningSagas.delete(sagaId);
 
-                return 'completed'
+                return 'completed';
               })
               .catch((e) => {
                 runningSagas.delete(sagaId);
