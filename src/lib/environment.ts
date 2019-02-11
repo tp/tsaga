@@ -3,6 +3,11 @@ import { CancellationToken } from './CancellationToken';
 import { SagaCancelledError } from './SagaCancelledError';
 import { SagaEnvironment, WaitForAction, Effect, Task } from './types';
 import { isBoundEffect } from './utils';
+import TimeoutError from './TimeoutError';
+
+function sleep(timeout: number): Promise<'timeout'> {
+  return new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
+}
 
 export function createSagaEnvironment<State>(
   store: MiddlewareAPI<any, State>,
@@ -49,9 +54,19 @@ export function createSagaEnvironment<State>(
       return effect(env, ...args);
     },
 
-    async take(actionCreator) {
+    async take(actionCreator, timeout) {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
+      }
+
+      if (typeof timeout === 'number') {
+        const value = await Promise.race([waitForAction(actionCreator), sleep(timeout)]);
+
+        if (value === 'timeout') {
+          throw new TimeoutError(actionCreator);
+        }
+
+        return value.payload;
       }
 
       const action = await waitForAction(actionCreator);

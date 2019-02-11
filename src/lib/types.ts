@@ -1,4 +1,5 @@
 import { Action, ActionCreator } from 'typescript-fsa';
+import { Middleware } from 'redux';
 
 export interface Task<ReturnType> {
   result: ReturnType;
@@ -71,8 +72,9 @@ export interface SagaEnvironment<State> {
    * Wait for an action to be dispatched.
    *
    * @param actionCreator - The action creator of the action to be dispatched.
+   * @param timeout
    */
-  take<Payload>(actionCreator: ActionCreator<Payload>): Promise<Payload>;
+  take<Payload>(actionCreator: ActionCreator<Payload>,  timeout?: number): Promise<Payload>;
 
   /**
    * Spawns the saga in a new context, returning a detached task
@@ -95,6 +97,16 @@ export interface Saga<State, Payload> {
 }
 
 export type AnySaga = Saga<any, any>;
+
+export interface SagaMiddleware {
+  middleware: Middleware;
+  sagaCompletion: () => Promise<void>;
+}
+
+export interface AwaitingAction {
+  actionCreator: ActionCreator<any>;
+  resolve: (action: Action<any>) => void;
+}
 
 // TODO: Add compile check, to prove that overload for `BoundEffect` works with additional parameters
 // const sagaEnv: SagaEnvironment<any> = null as any;

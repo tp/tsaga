@@ -203,7 +203,7 @@ export async function testSagaWithState<State, Payload>(
         return funcOrBoundEffect(testContext, ...args);
       }
     },
-    take: (actionCreator) => {
+    take: (actionCreator: ActionCreator<any>) => {
       return waitForMessage(actionCreator);
     },
   };
