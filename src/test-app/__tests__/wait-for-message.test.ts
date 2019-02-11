@@ -1,6 +1,6 @@
 import { createStore, applyMiddleware } from 'redux';
 import * as nock from 'nock';
-import { tsagaReduxMiddleware } from '../../lib';
+import { createSagaMiddleware } from '../../lib';
 import { userReducer } from '../reducers';
 import { userSelected, setCount } from '../actions';
 import { forLatest } from '../sagas';
@@ -16,7 +16,7 @@ test('waitFor functionality test', async () => {
     dispatch(setCount({ count: count + 5 }));
   });
 
-  const { middleware, sagaCompletion } = tsagaReduxMiddleware([waitForSaga]);
+  const { middleware, sagaCompletion } = createSagaMiddleware([waitForSaga]);
 
   const store = createStore(userReducer, applyMiddleware(middleware));
 
