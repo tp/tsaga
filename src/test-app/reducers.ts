@@ -1,6 +1,6 @@
+import { Action, isType } from 'typescript-fsa';
+import { setCount, userLoaded, userSelected } from './actions';
 import { AppState } from './types';
-import { isType, Action } from 'typescript-fsa';
-import { userSelected, userLoaded, setCount } from './actions';
 
 const initialState: AppState = {
   count: 0,

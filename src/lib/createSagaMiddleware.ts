@@ -2,7 +2,7 @@ import { isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
-import { AnySaga, WaitForAction, SagaMiddleware, AwaitingAction, ErrorHandler } from './types';
+import { AnySaga, AwaitingAction, ErrorHandler, SagaMiddleware, WaitForAction } from './types';
 
 export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
   const runningSagas = new Map<number, Promise<any>>();

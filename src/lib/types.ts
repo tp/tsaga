@@ -1,5 +1,5 @@
-import { Action, ActionCreator } from 'typescript-fsa';
 import { Middleware } from 'redux';
+import { Action, ActionCreator } from 'typescript-fsa';
 
 export interface Task<T> {
   result: T;

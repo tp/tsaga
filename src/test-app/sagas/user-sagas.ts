@@ -1,7 +1,7 @@
-import { forEvery, forLatest, AppEnv } from '../sagas';
-import { userSelected, userLoaded, setCount } from '../actions';
-import { getSelectedUserId, getUserById, getCount } from '../selectors';
+import { setCount, userLoaded, userSelected } from '../actions';
 import { loadUser, sleep } from '../app-library';
+import { AppEnv, forEvery, forLatest } from '../sagas';
+import { getCount, getSelectedUserId, getUserById } from '../selectors';
 
 /**
  * consumer
@@ -11,10 +11,12 @@ import { loadUser, sleep } from '../app-library';
 
 // saga, no typing needed as they are provided by the forEvery.
 // But then the question becomes, when is the forEvery being bound?
-// Would the reader monad pattern be better suitable? Would require type annotations on the saga (as it's not yet connected to any particular store)?
+// Would the reader monad pattern be better suitable?
+// Would require type annotations on the saga (as it's not yet connected to any particular store)?
 // Also can we better match the message type to the `action` parameter, such that they are always in sync and type safe?
 export const watchForUserSelectToLoad = forLatest(userSelected, async ($, { id }) => {
-  const currentUserId = $.select(getSelectedUserId); // Could of course use the action here, but wanting to test selector with different cardinatlities
+  // Could of course use the action here, but wanting to test selector with different cardinalities
+  const currentUserId = $.select(getSelectedUserId);
   if (currentUserId !== id) {
     throw new Error(
       `State does not match expectation based on action \,
@@ -25,9 +27,9 @@ export const watchForUserSelectToLoad = forLatest(userSelected, async ($, { id }
 
   const user = $.select(getUserById, id);
   if (!user) {
-    const user = await $.call(loadUser, id);
+    const loadedUser = await $.call(loadUser, id);
 
-    $.dispatch(userLoaded({ user }));
+    $.dispatch(userLoaded({ user: loadedUser }));
   } else {
     console.log(`not loading user, already present`);
   }

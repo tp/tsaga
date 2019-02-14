@@ -1,5 +1,6 @@
-import * as ts from 'typescript';
 import * as path from 'path';
+// tslint:disable-next-line:no-implicit-dependencies (Just used in tests)
+import * as ts from 'typescript';
 
 interface ReducedDiagnostic {
   message: string;

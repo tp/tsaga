@@ -1,4 +1,5 @@
 export class CancellationToken {
+  // tslint:disable-next-line:variable-name // TODO: better this way, should change rule setting
   private _canceled = false;
 
   public cancel() {

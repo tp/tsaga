@@ -2,13 +2,13 @@
  * Types used in the app
  */
 
-export type AppState = {
+export interface AppState {
   count: number;
   selectedUser: number | null;
   usersById: { [key: number]: User | undefined };
-};
+}
 
-export type User = {
+export interface User {
   id: number;
   name: string;
-};
+}

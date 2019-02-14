@@ -1,10 +1,10 @@
-import { createStore, applyMiddleware } from 'redux';
+// tslint:disable-next-line:no-implicit-dependencies (Just used in tests)
 import * as nock from 'nock';
+import { applyMiddleware, createStore } from 'redux';
 import { createSagaMiddleware } from '../../lib';
+import { setCount, userSelected } from '../actions';
 import { userReducer } from '../reducers';
-import { userSelected, setCount } from '../actions';
-import { forLatest, AppEnv } from '../sagas';
-// import { withEnv } from '../../lib/environment';
+import { AppEnv, forLatest } from '../sagas';
 
 nock.disableNetConnect();
 

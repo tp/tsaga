@@ -1,6 +1,6 @@
+import { deepStrictEqual, fail } from 'assert';
+import { Action, ActionCreator, isType } from 'typescript-fsa';
 import { Saga, SagaEnvironment } from '.';
-import { deepStrictEqual } from 'assert';
-import { ActionCreator, isType, Action } from 'typescript-fsa';
 import { BoundEffect, FuncWithEnv, Task } from './types';
 
 export function calls<P extends any[], T>(
@@ -12,7 +12,7 @@ export function calls<P extends any[], T>(
       return {
         type: 'call',
         func: f,
-        value: value,
+        value,
       };
     },
   };
@@ -27,7 +27,7 @@ export function spawns<State, P extends any[], T>(
       return {
         type: 'spawn',
         funcOrBoundEffect: effectOrEffectCreator,
-        value: value,
+        value,
       };
     },
   };
@@ -61,13 +61,14 @@ export function runs<State, P extends any[], T>(
   };
 }
 
-type ValueMockBuilder<StateT, T> = {
+interface ValueMockBuilder<StateT, T> {
   receiving: (value: T) => ValueMock<StateT, T>;
-};
+}
 
 type ValueMock<StateT, T> =
   | {
       type: 'call';
+      // tslint:disable-next-line:ban-types
       func: Function /* TODO: Stricter types */;
       value: T;
     }
@@ -90,7 +91,7 @@ type ValueMock<StateT, T> =
 export async function testSagaWithState<StateT, Payload>(
   saga: Saga<StateT, Payload>,
   initialAction: Action<Payload>,
-  mocks: ValueMock<StateT, any>[],
+  mocks: Array<ValueMock<StateT, any>>,
   initialState: StateT | undefined,
   reducer: (state: StateT | undefined, action: Action<any>) => StateT,
   finalState: StateT,
@@ -98,11 +99,11 @@ export async function testSagaWithState<StateT, Payload>(
   let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
   state = reducer(initialState, initialAction);
 
-  let awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
+  let awaitingMessages: Array<{ actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }> = [];
 
-  function waitForMessage<Payload>(actionCreator: ActionCreator<Payload>): Promise<Payload> {
+  function waitForMessage<MessagePayload>(actionCreator: ActionCreator<MessagePayload>): Promise<MessagePayload> {
     return new Promise((resolve, reject) => {
-      awaitingMessages.push({ actionCreator: actionCreator, promiseResolve: resolve });
+      awaitingMessages.push({ actionCreator, promiseResolve: resolve });
     });
   }
 
@@ -162,8 +163,10 @@ export async function testSagaWithState<StateT, Payload>(
           : funcOrBoundEffect(testContext, ...args);
 
       return {
-        cancel: () => {},
-        result: result,
+        cancel: () => {
+          /* TODO: Add cancellation */
+        },
+        result,
       };
     },
     run: <Args extends any[], T>(

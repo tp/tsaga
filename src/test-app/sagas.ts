@@ -1,6 +1,5 @@
-import { createTypedForEvery, createTypedForLatest } from '../lib';
+import { createTypedForEvery, createTypedForLatest, SagaEnvironment } from '../lib';
 import { AppState } from './types';
-import { SagaEnvironment } from '../lib';
 
 // Know the store here already? Or add that later?
 export const forEvery = createTypedForEvery<AppState>();

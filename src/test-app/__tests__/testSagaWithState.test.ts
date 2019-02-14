@@ -1,10 +1,11 @@
+// tslint:disable-next-line:no-implicit-dependencies (Just used in tests)
 import * as nock from 'nock';
-import { watchForUserSelectorToCountIfNotChangedWithing3s } from '../sagas/user-sagas';
-import { userReducer } from '../reducers';
-import { sleep } from '../app-library';
-import { getCount } from '../selectors';
-import { testSagaWithState, calls, selects } from '../../lib';
+import { calls, selects, testSagaWithState } from '../../lib';
 import { userSelected } from '../actions';
+import { sleep } from '../app-library';
+import { userReducer } from '../reducers';
+import { watchForUserSelectorToCountIfNotChangedWithing3s } from '../sagas/user-sagas';
+import { getCount } from '../selectors';
 
 nock.disableNetConnect();
 
