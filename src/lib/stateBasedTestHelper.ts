@@ -35,7 +35,7 @@ export function spawns<State, P extends any[], T>(
 
 type ReturnedPromiseResolvedType<T> = T extends (...args: any[]) => Promise<infer R> ? R : never;
 
-export function selects<State, T>(selector: (state: State) => T): ValueMockBuilder<State, T> {
+export function selects<State, T>(selector: (state: State, ...args: any[]) => T): ValueMockBuilder<State, T> {
   return {
     receiving: (value): ValueMock<State, T> => {
       return {
