@@ -1,23 +1,15 @@
-import { ActionCreator, isType } from 'typescript-fsa';
+import { isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
-import {
-  Saga,
-  SagaEnvironment,
-  AnySaga,
-  WaitForAction,
-  BoundEffect,
-  Task,
-  SagaMiddleware,
-  AwaitingAction,
-} from './types';
+import { AnySaga, WaitForAction, SagaMiddleware, AwaitingAction, ErrorHandler } from './types';
 
 export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
   const runningSagas = new Map<number, Promise<any>>();
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
   let id = 0;
   let awaitingActions: AwaitingAction[] = [];
+  let errorHandler: ErrorHandler | undefined;
 
   const waitForAction: WaitForAction = (actionCreator) => {
     return new Promise((resolve) => {
@@ -67,7 +59,21 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
               .catch((e) => {
                 runningSagas.delete(sagaId);
 
-                return e instanceof SagaCancelledError ? 'cancelled' : 'failed';
+                if (e instanceof SagaCancelledError) {
+                  return 'cancelled';
+                } else {
+                  if (errorHandler) {
+                    try {
+                      errorHandler(e);
+                    } catch (e) {
+                      console.error('Error when calling errorHandler', e);
+                    }
+                  } else {
+                    console.error('Saga finish with error', e);
+                  }
+
+                  return 'failed';
+                }
               }),
           );
         }
@@ -78,6 +84,10 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
       // TODO: Add support to also await forks
       // For this we would also need to add forks to this map and have a unique id for them.
       await Promise.all(runningSagas.values());
+    },
+
+    setErrorHandler(newHandler) {
+      errorHandler = newHandler;
     },
   };
 }

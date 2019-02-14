@@ -59,7 +59,7 @@ export interface SagaEnvironment<State> {
    * if no timeout specified, it will wait until the next action is dispatched.
    * @throws TimeoutError - Throws a TimeoutError when the timeout resolve before the action was fired.
    */
-  take<Payload>(actionCreator: ActionCreator<Payload>,  timeout?: number): Promise<Payload>;
+  take<Payload>(actionCreator: ActionCreator<Payload>, timeout?: number): Promise<Payload>;
 
   /**
    * Spawns the saga in a new context, returning a detached task
@@ -80,9 +80,12 @@ export interface Saga<State, Payload> {
 
 export type AnySaga = Saga<any, any>;
 
+export type ErrorHandler = (error: unknown) => void;
+
 export interface SagaMiddleware {
   middleware: Middleware;
   sagaCompletion: () => Promise<void>;
+  setErrorHandler: (handler: ErrorHandler) => void;
 }
 
 export interface AwaitingAction {
