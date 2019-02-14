@@ -101,11 +101,8 @@ export async function testSagaWithState<StateT, Payload>(
   let awaitingMessages: { actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }[] = [];
 
   function waitForMessage<Payload>(actionCreator: ActionCreator<Payload>): Promise<Payload> {
-    console.error(`waitForMessage called`);
-
     return new Promise((resolve, reject) => {
       awaitingMessages.push({ actionCreator: actionCreator, promiseResolve: resolve });
-      console.error(`awaitingMessages`, awaitingMessages);
     });
   }
 
@@ -119,8 +116,6 @@ export async function testSagaWithState<StateT, Payload>(
         }
       }
 
-      console.info(`run: calling through`);
-
       return f(...params);
     },
     select: (selector, ...args) => {
@@ -131,13 +126,9 @@ export async function testSagaWithState<StateT, Payload>(
         }
       }
 
-      console.info(`select: calling through`);
-
       return selector(state, ...args);
     },
     dispatch: (action) => {
-      console.info(`test env dispatch`, action);
-
       state = reducer(state, action);
 
       for (const config of awaitingMessages) {
