@@ -7,16 +7,16 @@ import { forLatest, AppEnv } from '../sagas';
 
 nock.disableNetConnect();
 
-test('waitFor functionality test', async () => {
-  const subSaga = ($: AppEnv, newCount: number) => {
-    $.dispatch(setCount({ count: newCount }));
-  };
-
+test('error handler test', async () => {
   const waitForSaga = forLatest(userSelected, async ($, { id }) => {
-    await $.run(subSaga, id * 3);
+    throw new Error(`err in saga`);
   });
 
-  const { middleware, sagaCompletion } = createSagaMiddleware([waitForSaga]);
+  const handlerMock = jest.fn();
+
+  const { middleware, sagaCompletion, setErrorHandler } = createSagaMiddleware([waitForSaga]);
+
+  setErrorHandler(handlerMock);
 
   const store = createStore(userReducer, applyMiddleware(middleware));
 
@@ -24,7 +24,5 @@ test('waitFor functionality test', async () => {
 
   await sagaCompletion();
 
-  const finalState = store.getState();
-
-  expect(finalState.count).toEqual(15);
+  expect(handlerMock.mock.calls).toEqual([[new Error(`err in saga`)]]);
 });
