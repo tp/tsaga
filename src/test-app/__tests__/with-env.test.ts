@@ -1,5 +1,6 @@
 // tslint:disable-next-line:no-implicit-dependencies (Just used in tests)
 import * as nock from 'nock';
+// tslint:disable-next-line:no-implicit-dependencies (Just used in tests)
 import { applyMiddleware, createStore } from 'redux';
 import { createSagaMiddleware } from '../../lib';
 import { setCount, userSelected } from '../actions';
