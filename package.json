@@ -15,6 +15,7 @@
     "lodash": "^4.17.10",
     "nock": "^9.3.3",
     "node-fetch": "^2.1.2",
+    "prettier": "^1.16.4",
     "redux": "^4.0.0",
     "reselect": "^3.0.1",
     "rimraf": "^2.6.3",
@@ -30,7 +31,7 @@
     "watch:jest": "jest --watchAll",
     "lint": "tslint -c tslint.json --project .",
     "ts-check": "tsc -w --noEmit",
-    "test": "tsc --noEmit && yarn lint && jest src/test-app",
+    "test": "prettier --list-different \"src/**/*.{ts,tsx}\" && tsc --noEmit && yarn lint && jest src/test-app",
     "test:updateSnapshots": "jest --updateSnapshot",
     "prepublishOnly": "rimraf compiled/ && tsc"
   },
