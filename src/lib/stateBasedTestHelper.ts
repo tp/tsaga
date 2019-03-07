@@ -61,6 +61,13 @@ export function runs<State, P extends any[], T>(
   };
 }
 
+export function dispatches<State, T>(action: Action<T>): ValueMock<State, T> {
+  return {
+    type: 'dispatch',
+    action,
+  };
+}
+
 interface ValueMockBuilder<StateT, T> {
   receiving: (value: T) => ValueMock<StateT, T>;
 }
@@ -86,6 +93,10 @@ type ValueMock<StateT, T> =
       type: 'spawn';
       funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, any, T> | FuncWithEnv<StateT, any, T>;
       value: T;
+    }
+  | {
+      type: 'dispatch';
+      action: Action<T>;
     };
 
 export async function testSagaWithState<StateT, Payload>(
@@ -130,6 +141,16 @@ export async function testSagaWithState<StateT, Payload>(
       return selector(state, ...args);
     },
     dispatch: (action) => {
+      for (const effect of mocks) {
+        if (effect.type === 'dispatch') {
+          if (effect.action.type === action.type) {
+            deepStrictEqual(effect.action.payload, action.payload);
+
+            mocks = mocks.filter((e) => e !== effect);
+          }
+        }
+      }
+
       state = reducer(state, action);
 
       for (const config of awaitingMessages) {
@@ -137,6 +158,7 @@ export async function testSagaWithState<StateT, Payload>(
           config.promiseResolve(action.payload);
         }
       }
+
       awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
     },
     spawn: (funcOrBoundEffect, ...args) => {
