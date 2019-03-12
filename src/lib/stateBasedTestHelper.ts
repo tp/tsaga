@@ -72,7 +72,7 @@ interface ValueMockBuilder<StateT, T> {
   receiving: (value: T) => ValueMock<StateT, T>;
 }
 
-type ValueMock<StateT, T> =
+export type ValueMock<StateT, T> =
   | {
       type: 'call';
       // tslint:disable-next-line:ban-types
