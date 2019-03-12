@@ -2,7 +2,7 @@ import { Action } from 'typescript-fsa';
 import { userSelected } from '../test-app/actions';
 import { sleep } from '../test-app/app-library';
 import { userReducer } from '../test-app/reducers';
-import { watchForUserSelectorToCountIfNotChangedWithing3s } from '../test-app/sagas/user-sagas';
+import { watchForUserSelectorToCountIfNotChangedWithing3s as watchForUserSelectorToCountIfNotChangedWithin3s } from '../test-app/sagas/user-sagas';
 import { getCount } from '../test-app/selectors';
 import { calls, selects, ValueMock } from './stateBasedTestHelper';
 import { Saga } from './types';
@@ -36,16 +36,24 @@ interface ExpectSagaStage4<AppState, InitialSagaPayload> {
   toSelect(...args: any[]): ExpectSagaStage4<AppState, InitialSagaPayload>;
 
   toHaveFinalState(state: AppState): Promise<void>;
+  toComplete(): Promise<AppState>; // ? Sth. for snapshot testing
 }
 
 test('expectSaga sample', () => {
-  return expectSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
-    .startedWithAction(userSelected({ id: 2 }))
-    .andReducerAndInitialState(userReducer, undefined)
-    .withMocks([calls(sleep).receiving(), selects(getCount).receiving(5)])
+  return (
+    expectSaga(watchForUserSelectorToCountIfNotChangedWithin3s)
+      // .withInitialState(undefined)
+      .withReducer(userReducer /* optional initial state */)
+      // assert each called at least once
+      // .andAlwaysMock([calls(track, addToBasketEvent).receiving(), selects(getCount).receiving(5)]) // optional
 
-    .toCall(sleep)
-    .toSelect(getCount)
+      .whenStartedWithAction(userSelected({ id: 2 }))
 
-    .toHaveFinalState({ count: 6, selectedUser: 2, usersById: {} });
+      // .toCall(sleep, 3000 /* require all arguments */)
+      // .toCall.mocked(sleep, 3000).receiving()
+      // .toSelect(getCount)
+      // .toSelect.mocked(getCount).receiving(3)
+
+      .toHaveFinalState({ count: 6, selectedUser: 2, usersById: {} })
+  );
 });
