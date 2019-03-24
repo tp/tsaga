@@ -1,4 +1,4 @@
-import { Middleware } from 'redux';
+import { Middleware, Dispatch } from 'redux';
 import { Action, ActionCreator } from 'typescript-fsa';
 
 export interface Task<T> {
@@ -26,7 +26,7 @@ export interface SagaEnvironment<State> {
    *
    * @param action - The action object.
    */
-  dispatch(action: Action<any>): void;
+  dispatch<Payload>(action: Action<Payload>): Action<Payload>;
 
   /**
    * Run a selector with the first argument being the current state.

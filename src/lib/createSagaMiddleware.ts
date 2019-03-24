@@ -4,7 +4,10 @@ import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
 import { AnySaga, AwaitingAction, ErrorHandler, SagaMiddleware, WaitForAction } from './types';
 
-export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
+export function createSagaMiddleware(
+  sagas: AnySaga[],
+  sagaEnvCreator = createSagaEnvironment,
+): SagaMiddleware {
   const runningSagas = new Map<number, Promise<any>>();
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
   let id = 0;
@@ -45,7 +48,7 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
           }
 
           const sagaId = id++;
-          const env = createSagaEnvironment(api, waitForAction, cancellationToken);
+          const env = sagaEnvCreator(api, waitForAction, cancellationToken);
 
           runningSagas.set(
             sagaId,

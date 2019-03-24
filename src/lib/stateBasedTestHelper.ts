@@ -1,241 +1,338 @@
-import { deepStrictEqual, fail } from 'assert';
+import { deepStrictEqual } from 'assert';
+import { createStore, DeepPartial, Reducer } from 'redux';
 import { Action, ActionCreator, isType } from 'typescript-fsa';
-import { Saga, SagaEnvironment } from '.';
-import { BoundEffect, FuncWithEnv, Task } from './types';
+import { BoundEffect, createSagaMiddleware, Saga, SagaEnvironment, Task } from '.';
+import { CancellationToken } from './CancellationToken';
+import { UnusedMockError } from './test-errors';
+import { FuncWithEnv, WaitForAction } from './types';
 
-export function calls<P extends any[], T>(
-  f: (...params: P) => T,
-): ValueMockBuilder<any, T extends Promise<infer PT> ? PT : T> {
-  // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
+interface CallMock<Return> {
+  type: 'call';
+  used: boolean;
+  fn: () => Return;
+  value: Return;
+}
+
+interface SelectMock<State, Return> {
+  type: 'select';
+  used: boolean;
+  fn: (state: State) => Return;
+  value: Return;
+}
+
+interface RunMock {
+  type: 'run';
+  used: boolean;
+}
+
+interface SpawnMock {
+  type: 'spawn';
+  used: boolean;
+}
+
+type Mock<State> = CallMock<any> | SelectMock<State, any> | RunMock | SpawnMock;
+
+export function call<Return>(
+  fn: () => Return,
+  value: Return,
+): CallMock<Return> {
   return {
-    receiving: (value) => {
-      return {
-        type: 'call',
-        func: f,
-        value,
-      };
-    },
+    type: 'call',
+    used: false,
+    fn,
+    value,
   };
 }
 
-export function spawns<State, P extends any[], T>(
-  effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, P, T> | FuncWithEnv<State, P, T>,
-): ValueMockBuilder<State, T> {
-  // extends Promise<infer PT> ? PT : T
+export function select<State, Return>(
+  fn: (state: State) => Return,
+  value: Return,
+): SelectMock<State, Return> {
   return {
-    receiving: (value) => {
-      return {
-        type: 'spawn',
-        funcOrBoundEffect: effectOrEffectCreator,
-        value,
-      };
-    },
+    type: 'select',
+    used: false,
+    fn,
+    value,
   };
 }
 
-type ReturnedPromiseResolvedType<T> = T extends (...args: any[]) => Promise<infer R> ? R : never;
-
-export function selects<State, T>(selector: (state: State, ...args: any[]) => T): ValueMockBuilder<State, T> {
+export function run(): RunMock {
   return {
-    receiving: (value): ValueMock<State, T> => {
-      return {
-        type: 'select',
-        selector,
-        value,
-      };
-    },
+    type: 'run',
+    used: false,
   };
 }
 
-export function runs<State, P extends any[], T>(
-  funcOrEffectCreator: BoundEffect<SagaEnvironment<State>, P, T> | FuncWithEnv<State, P, T>,
-): ValueMockBuilder<State, T> {
+export function spawn(): SpawnMock {
   return {
-    receiving: (value): ValueMock<State, T> => {
-      return {
-        type: 'run',
-        funcOrBoundEffect: funcOrEffectCreator,
-        value,
-      };
-    },
+    type: 'spawn',
+    used: false,
   };
 }
 
-export function dispatches<State, T>(action: Action<T>): ValueMock<State, T> {
-  return {
-    type: 'dispatch',
-    action,
-  };
+interface ExpectSagaStage1<State, Payload> {
+  withReducer(
+    reducer: Reducer<State, any>,
+    initialState?: DeepPartial<State>,
+  ): ExpectSagaStage2<State, Payload>;
 }
 
-interface ValueMockBuilder<StateT, T> {
-  receiving: (value: T) => ValueMock<StateT, T>;
+interface ExpectSagaStage2<State, Payload> extends ExpectSagaStage3<State, Payload> {
+  withMocks(
+    mocks: Array<Mock<State>>,
+  ): ExpectSagaStage3<State, Payload>;
 }
 
-export type ValueMock<StateT, T> =
-  | {
-      type: 'call';
-      // tslint:disable-next-line:ban-types
-      func: Function /* TODO: Stricter types */;
-      value: T;
-    }
-  | {
-      type: 'run';
-      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, any, any> | FuncWithEnv<StateT, any, any>;
-      value: T;
-    }
-  | {
-      type: 'select';
-      selector: (state: StateT) => T;
-      value: T;
-    }
-  | {
-      type: 'spawn';
-      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, any, T> | FuncWithEnv<StateT, any, T>;
-      value: T;
-    }
-  | {
-      type: 'dispatch';
-      action: Action<T>;
+interface ExpectSagaStage3<State, Payload> extends ExpectSagaStage4<State, Payload> {
+  toCall<Args extends any[], Return>(
+    fn: (...args: Args) => Return,
+    ...args: Args
+  ): ExpectSagaStage3<State, Payload>;
+  toRun(...args: any[]): ExpectSagaStage3<State, Payload>;
+  toSpawn(...args: any[]): ExpectSagaStage3<State, Payload>;
+  toDispatch<DispatchPayload>(
+    action: Action<DispatchPayload>,
+  ): ExpectSagaStage3<State, Payload>;
+  toTake<TakePayload>(
+    action: Action<TakePayload>,
+  ): ExpectSagaStage3<State, Payload>;
+}
+
+interface ExpectSagaStage4<State, Payload> {
+  dispatch(action: Action<Payload>): ExpectSagaStage5<State, Payload>;
+}
+
+interface ExpectSagaStage5<State, Payload> extends ExpectSagaStage6 {
+  toHaveFinalState(state: State): ExpectSagaStage6;
+}
+
+interface ExpectSagaStage6 {
+  run(timeout?: number): Promise<void>;
+}
+
+interface DispatchAssert<Payload> {
+  type: 'dispatch';
+  action: Action<Payload>;
+}
+
+interface TakeAssert<Payload> {
+  type: 'take';
+  action: Action<Payload>;
+}
+
+interface CallAssert<Args extends any[] = any[], Return = any> {
+  type: 'call';
+  fn: (...args: Args) => Return;
+  args: Args;
+}
+
+type Assert = DispatchAssert<any> | TakeAssert<any> | CallAssert;
+
+type Mocks<State> = Array<Mock<State>>;
+
+function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Assert[]) {
+  const selectMocks = mocks.filter((mock): mock is SelectMock<State, any> => mock.type === 'select');
+  const callMocks = mocks.filter((mock): mock is CallMock<any> => mock.type === 'call');
+
+  return (
+    store,
+    waitForAction: WaitForAction,
+    cancellationToken?: CancellationToken,
+  ): SagaEnvironment<State> => {
+    return {
+      dispatch<Payload>(action: Action<Payload>) {
+        const assert = asserts[0];
+
+        if (assert && assert.type === 'dispatch' && action.type === assert.action.type) {
+          asserts.shift();
+          deepStrictEqual(action, assert && assert.action);
+        }
+
+        return store.dispatch(action);
+      },
+
+      select<T, Args extends any[]>(selector: (state: State, ...args: Args) => T, ...args: Args): T {
+        const selectMock = selectMocks.find((mock) => mock.fn === selector);
+
+        if (selectMock) {
+          selectMock.used = true;
+
+          return selectMock.value;
+        }
+
+        return selector(store.getState(), ...args);
+      },
+
+      async take<Payload>(actionCreator: ActionCreator<Payload>, timeout?: number): Promise<Payload> {
+        const assert = asserts[0];
+
+        if (assert && assert.type === 'take') {
+          asserts.shift();
+          if (!isType(assert.action, actionCreator)) {
+            throw new Error();
+          }
+
+          return assert.action.payload;
+        }
+
+        // TODO what to do?
+        throw new Error();
+      },
+
+      run<Args extends any[], T>(effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T>, ...args): T {
+
+      },
+
+      spawn<T, Args extends any[]>(
+        effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,
+        ...args
+      ): Task<T> {
+      },
+
+      call(fn, ...args) {
+        const assert = asserts[0];
+
+        if (assert && assert.type === 'call' && assert.fn === fn) {
+          asserts.shift();
+
+          deepStrictEqual(args, assert.args);
+        }
+
+        const callMock = callMocks.find((mock) => mock.fn === fn);
+
+        if (callMock) {
+          callMock.used = true;
+
+          return callMock.value;
+        }
+
+        return fn(...args);
+      },
     };
-
-export async function testSagaWithState<StateT, Payload>(
-  saga: Saga<StateT, Payload>,
-  initialAction: Action<Payload>,
-  mocks: Array<ValueMock<StateT, any>>,
-  initialState: StateT | undefined,
-  reducer: (state: StateT | undefined, action: Action<any>) => StateT,
-  finalState: StateT,
-) {
-  let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
-  state = reducer(initialState, initialAction);
-
-  let awaitingMessages: Array<{ actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }> = [];
-
-  function waitForMessage<MessagePayload>(actionCreator: ActionCreator<MessagePayload>): Promise<MessagePayload> {
-    return new Promise((resolve, reject) => {
-      awaitingMessages.push({ actionCreator, promiseResolve: resolve });
-    });
-  }
-
-  const testContext: SagaEnvironment<StateT> = {
-    call: (f, ...params) => {
-      for (const effect of mocks) {
-        if (effect.type === 'call' && effect.func === f) {
-          /* TODO: & check args */
-          mocks = mocks.filter((e) => e !== effect);
-          return effect.value;
-        }
-      }
-
-      return f(...params);
-    },
-    select: (selector, ...args) => {
-      for (const effect of mocks) {
-        if (effect.type === 'select' && effect.selector === selector) {
-          mocks = mocks.filter((e) => e !== effect);
-          return effect.value;
-        }
-      }
-
-      return selector(state, ...args);
-    },
-    dispatch: (action) => {
-      for (const effect of mocks) {
-        if (effect.type === 'dispatch') {
-          if (effect.action.type === action.type) {
-            deepStrictEqual(effect.action.payload, action.payload);
-
-            mocks = mocks.filter((e) => e !== effect);
-          }
-        }
-      }
-
-      state = reducer(state, action);
-
-      for (const config of awaitingMessages) {
-        if (isType(action, config.actionCreator)) {
-          config.promiseResolve(action.payload);
-        }
-      }
-
-      awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
-    },
-    spawn: (funcOrBoundEffect, ...args) => {
-      // TODO: Create detached context / add cancellation to tests?
-      for (const effect of mocks) {
-        if (effect.type === 'spawn') {
-          if (funcOrBoundEffect instanceof BoundEffect) {
-            if (effect.funcOrBoundEffect instanceof BoundEffect) {
-              if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
-                mocks = mocks.filter((e) => e !== effect);
-                return effect.value;
-              }
-            }
-          } else if (effect.funcOrBoundEffect === funcOrBoundEffect) {
-            mocks = mocks.filter((e) => e !== effect);
-            return effect.value;
-          }
-        }
-      }
-
-      const result =
-        funcOrBoundEffect instanceof BoundEffect
-          ? funcOrBoundEffect.run(testContext, ...funcOrBoundEffect.args)
-          : funcOrBoundEffect(testContext, ...args);
-
-      return {
-        cancel: () => {
-          /* TODO: Add cancellation */
-        },
-        result,
-      };
-    },
-    run: <Args extends any[], T>(
-      funcOrBoundEffect: BoundEffect<SagaEnvironment<StateT>, Args, T> | FuncWithEnv<StateT, Args, T>,
-      ...args: typeof funcOrBoundEffect extends BoundEffect<any, any, any> ? never : Args
-    ): T => {
-      for (const effect of mocks) {
-        if (effect.type === 'run') {
-          if (funcOrBoundEffect instanceof BoundEffect) {
-            if (effect.funcOrBoundEffect instanceof BoundEffect) {
-              if ((effect.funcOrBoundEffect as any).constructor === (funcOrBoundEffect as any).constructor) {
-                mocks = mocks.filter((e) => e !== effect);
-                return effect.value;
-              }
-            }
-          } else if (effect.funcOrBoundEffect === funcOrBoundEffect) {
-            mocks = mocks.filter((e) => e !== effect);
-            return effect.value;
-          }
-        }
-      }
-
-      if (funcOrBoundEffect instanceof BoundEffect) {
-        return funcOrBoundEffect.run(testContext as any /* TODO */, ...funcOrBoundEffect.args);
-      } else {
-        return funcOrBoundEffect(testContext, ...args);
-      }
-    },
-    take: (actionCreator: ActionCreator<any>) => {
-      return waitForMessage(actionCreator);
-    },
   };
+}
 
-  await saga.innerFunction(
-    /**
-     * Fine, since the outside interface is equal, it's just not of the same `class`
-     *
-     * TODO: We might want to use `InterfaceOf` everywhere instead of exposing the concrete class
-     */
-    testContext,
-    initialAction.payload,
-  );
+class SagaTest<State, Payload> {
+  private readonly saga: Saga<State, Payload>;
 
-  if (mocks.length) {
-    console.error(`Unused mocks after the saga completed`, mocks);
-    throw new Error(`Unused mocks after the saga completed`);
+  private mocks: Array<Mock<State>> = [];
+
+  private asserts: Assert[] = [];
+
+  private action: Action<Payload> | null = null;
+
+  private finalState: State | null = null;
+
+  private reducer: Reducer<State> | undefined;
+
+  private initialState: undefined | DeepPartial<State> = undefined;
+
+  constructor(saga: Saga<State, Payload>) {
+    this.saga = saga;
   }
 
-  deepStrictEqual(state, finalState);
+  public withReducer(
+    reducer: Reducer<State>,
+    initialState?: DeepPartial<State>,
+  ): ExpectSagaStage2<State, Payload> {
+    this.reducer = reducer;
+    this.initialState = initialState;
+
+    return this;
+  }
+
+  public withMocks(mocks: Array<Mock<State>>): ExpectSagaStage3<State, Payload> {
+    this.mocks = mocks;
+
+    return this;
+  }
+
+  public toCall<Args extends any[], Return>(fn: (...args: Args) => Return, ...args: Args): ExpectSagaStage3<State, Payload> {
+    this.asserts.push({
+      type: 'call',
+      fn,
+      args,
+    });
+
+    return this;
+
+  }
+  public toRun(...args: any[]): ExpectSagaStage3<State, Payload> { return this; }
+  public toSpawn(...args: any[]): ExpectSagaStage3<State, Payload> { return this; }
+
+  public toDispatch<DispatchPayload>(action: Action<DispatchPayload>): ExpectSagaStage3<State, Payload> {
+    this.asserts.push({
+      type: 'dispatch',
+      action,
+    });
+
+    return this;
+  }
+
+  public toTake<TakePayload>(action: Action<TakePayload>): ExpectSagaStage3<State, Payload> {
+    this.asserts.push({
+      type: 'take',
+      action,
+    });
+
+    return this;
+  }
+
+  public dispatch(action: Action<Payload>): ExpectSagaStage5<State, Payload> {
+    this.action = action;
+
+    return this;
+  }
+
+  public toHaveFinalState(state: State): ExpectSagaStage6 {
+    this.finalState = state;
+
+    return this;
+  }
+
+  public async run(timeout: number = 5 * 1000) {
+    const { middleware, sagaCompletion } = createSagaMiddleware([this.saga], createTestEnvironment);
+
+    const store = createStore(
+      this.reducer || ((state = {} as any) => state),
+      this.initialState,
+      middleware,
+    );
+
+    store.dispatch(this.action);
+
+    const val = await Promise.race([
+      sagaCompletion(),
+      new Promise((resolve) => {
+        setTimeout(() => resolve('timeout'), timeout);
+      }) as Promise<'timeout'>,
+    ]);
+
+    if (val === 'timeout') {
+      throw new Error('Saga test timeout');
+    }
+
+    if (this.asserts.length > 0) {
+      throw new Error('Asserts are left');
+    }
+
+    if (this.finalState) {
+      deepStrictEqual(
+        store.getState(),
+        this.finalState,
+      );
+    }
+
+    for (const mock of this.mocks) {
+      if (!mock.used) {
+        throw new UnusedMockError(
+          '',
+        );
+      }
+    }
+  }
+}
+
+export function expectSaga<State, Payload>(saga: Saga<State, Payload>): ExpectSagaStage1<State, Payload> {
+  return new SagaTest(saga);
 }
