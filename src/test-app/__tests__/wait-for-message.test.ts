@@ -9,13 +9,16 @@ import { forLatest } from '../sagas';
 nock.disableNetConnect();
 
 test('waitFor functionality test', async () => {
-  const waitForSaga = forLatest(userSelected, async ({ dispatch, select, run, take }, payload) => {
-    console.error(`waitfor saga started`);
+  const waitForSaga = forLatest(
+    userSelected,
+    async ({ dispatch, select, run, take }, payload) => {
+      console.error(`waitfor saga started`);
 
-    const { count } = await take(setCount);
+      const { count } = await take(setCount);
 
-    dispatch(setCount({ count: count + 5 }));
-  });
+      dispatch(setCount({ count: count + 5 }));
+    },
+  );
 
   const { middleware, sagaCompletion } = createSagaMiddleware([waitForSaga]);
 

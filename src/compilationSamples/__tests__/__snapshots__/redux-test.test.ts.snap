@@ -5,34 +5,28 @@ Array [
   Object {
     "character": 27,
     "fileName": "redux-test.ts",
-    "line": 41,
+    "line": 47,
     "message": "Argument of type '(state: { text: string; }) => string' is not assignable to parameter of type '(state: CountReducerState) => string'.
   Types of parameters 'state' and 'state' are incompatible.
     Property 'text' is missing in type 'CountReducerState' but required in type '{ text: string; }'.",
   },
   Object {
-    "character": 4,
+    "character": 13,
     "fileName": "redux-test.ts",
-    "line": 52,
-    "message": "Argument of type 'Action<{ notText: string; }>' is not assignable to parameter of type 'Action<{ text: string; }>'.
-  Property 'text' is missing in type '{ notText: string; }' but required in type '{ text: string; }'.",
+    "line": 61,
+    "message": "Argument of type 'OutputParametricSelector<CountReducerState, string, boolean, (res1: string, res2: number) => boolean>' is not assignable to parameter of type '(state: CountReducerState) => boolean'.",
   },
   Object {
-    "character": 76,
+    "character": 19,
     "fileName": "redux-test.ts",
-    "line": 54,
-    "message": "Argument of type '5' is not assignable to parameter of type 'boolean'.",
+    "line": 63,
+    "message": "Argument of type 'Response' is not assignable to parameter of type 'string | Request'.
+  Type 'Response' is missing the following properties from type 'Request': context, method, redirect, referrer, and 5 more.",
   },
   Object {
-    "character": 68,
+    "character": 24,
     "fileName": "redux-test.ts",
-    "line": 58,
-    "message": "Argument of type '404' is not assignable to parameter of type 'Response'.",
-  },
-  Object {
-    "character": 6,
-    "fileName": "redux-test.ts",
-    "line": 71,
+    "line": 72,
     "message": "Type 'string' is not assignable to type 'number'.",
   },
 ]

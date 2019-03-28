@@ -4,12 +4,17 @@ import { applyMiddleware, createStore } from 'redux';
 import { createSagaMiddleware } from '../../lib';
 import { userSelected } from '../actions';
 import { userReducer } from '../reducers';
-import { watchForUserSelectorToCountIfNotChangedWithing3s, watchForUserSelectToLoad } from '../sagas/user-sagas';
+import {
+  watchForUserSelectorToCountIfNotChangedWithing3s,
+  watchForUserSelectToLoad,
+} from '../sagas/user-sagas';
 
 nock.disableNetConnect();
 
 test('Load user (usage example; no mocks)', async () => {
-  const { middleware, sagaCompletion } = createSagaMiddleware([watchForUserSelectToLoad]);
+  const { middleware, sagaCompletion } = createSagaMiddleware([
+    watchForUserSelectToLoad,
+  ]);
 
   const store = createStore(userReducer, applyMiddleware(middleware));
 
@@ -23,7 +28,9 @@ test('Load user (usage example; no mocks)', async () => {
 });
 
 test('Inrease count (usage example; no mocks)', async () => {
-  const { middleware, sagaCompletion } = createSagaMiddleware([watchForUserSelectorToCountIfNotChangedWithing3s]);
+  const { middleware, sagaCompletion } = createSagaMiddleware([
+    watchForUserSelectorToCountIfNotChangedWithing3s,
+  ]);
 
   const store = createStore(userReducer, applyMiddleware(middleware));
 

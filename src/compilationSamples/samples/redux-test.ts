@@ -1,14 +1,18 @@
 // tslint:disable
 import fetch, { Response } from 'node-fetch';
-import { testSagaWithState, createTypedForEvery, calls, selects } from '../../lib';
+import { createTypedForEvery, expectSaga } from '../../lib';
 import actionCreatorFactory from 'typescript-fsa';
 import { createSelector } from 'reselect';
+import { select } from '../../lib/testing/mocks';
 
 export type CountReducerState = {
   count: number;
 };
 
-export function sampleIdentityCountReducer(previousState = { count: 0 }, message: any): CountReducerState {
+export function sampleIdentityCountReducer(
+  previousState = { count: 0 },
+  message: any,
+): CountReducerState {
   return previousState;
 }
 
@@ -29,7 +33,9 @@ export const stringLongerThanCountSelector = createSelector(
 
 const createActionCreator = actionCreatorFactory('User');
 const postText = createActionCreator<{ text: string }>('set_count');
-const wrongAction = createActionCreator<{ notText: string }>('asdfasdfasdfasfd');
+const wrongAction = createActionCreator<{ notText: string }>(
+  'asdfasdfasdfasfd',
+);
 
 const forEvery = createTypedForEvery<CountReducerState>();
 
@@ -42,33 +48,28 @@ const watchForPostText = forEvery(postText, async ($, { text }) => {
   const x = await $.select(textStateSelector);
 
   if (isLonger) {
-    await $.call(fetch, `http://localhost/api/stringCollector`, { method: 'POST', body: text });
+    await $.call(fetch, `http://localhost/api/stringCollector`, {
+      method: 'POST',
+      body: text,
+    });
   }
 });
 
 test('Saga test', async () => {
-  testSagaWithState(
-    watchForPostText,
-    //  TODO: This should also fail on alternate message with the same payload (should take the action creator from the watcher, not saga)
-    wrongAction({ notText: 'asdf' }) /* should be `postText` */,
-    [
-      selects(stringLongerThanCountSelector /* TODO: `sample` */).receiving(5 /* should be `boolean` */),
-      calls(
-        fetch /* TODO: Accept additional params,  undefined / should be `string` /, { method: 'POST', body: '' } */,
-      ).receiving(new Response(undefined, { status: 200 })),
-      calls(fetch /* '', { method: 'POST', body: '' } */).receiving(404 /* should be `Response` */),
-    ],
-    undefined,
-    sampleIdentityCountReducer,
-    { count: '1' /* should be `number` */ },
-  );
+  expectSaga(watchForPostText)
+    .withReducer(sampleIdentityCountReducer)
+    .withMocks([
+      select(stringLongerThanCountSelector, 5 /* should be `boolean` */),
+    ])
+    .toCall(fetch, new Response(undefined, { status: 200 }))
+    .toCall(fetch, 404)
+    .dispatch(wrongAction({ notText: 'asdf' }))
+    .toHaveFinalState({ count: '1' /* should be `number` */ })
+    .run();
 
-  return testSagaWithState(
-    watchForPostText,
-    postText({ text: 'asdf' }),
-    [],
-    undefined,
-    sampleIdentityCountReducer,
-    { count: '1' /* should be `number` */ }, // this is only reached, if the correct action is passed
-  );
+  return expectSaga(watchForPostText)
+    .withReducer(sampleIdentityCountReducer)
+    .dispatch(postText({ text: 'asdf' }))
+    .toHaveFinalState({ count: '1' /* should be `number` */ })
+    .run();
 });

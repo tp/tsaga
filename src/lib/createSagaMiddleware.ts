@@ -13,7 +13,7 @@ import {
 
 export function createSagaMiddleware(
   sagas: AnySaga[],
-  sagaEnvCreator: SagaEnvironmentCreator = createSagaEnvironment,
+  sagaEnvCreator: SagaEnvironmentCreator<any> = createSagaEnvironment,
 ): SagaMiddleware {
   const runningSagas = new Map<number, Promise<any>>();
   const cancellationTokens = new Map<AnySaga, CancellationToken>();

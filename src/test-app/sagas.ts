@@ -1,4 +1,8 @@
-import { createTypedForEvery, createTypedForLatest, SagaEnvironment } from '../lib';
+import {
+  createTypedForEvery,
+  createTypedForLatest,
+  SagaEnvironment,
+} from '../lib';
 import { AppState } from './types';
 
 // Know the store here already? Or add that later?

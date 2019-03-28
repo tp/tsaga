@@ -15,7 +15,9 @@ test('error handler test', async () => {
 
   const handlerMock = jest.fn();
 
-  const { middleware, sagaCompletion, setErrorHandler } = createSagaMiddleware([waitForSaga]);
+  const { middleware, sagaCompletion, setErrorHandler } = createSagaMiddleware([
+    waitForSaga,
+  ]);
 
   setErrorHandler(handlerMock);
 

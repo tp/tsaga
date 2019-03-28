@@ -17,10 +17,17 @@ export const defaultCompilerOptions: ts.CompilerOptions = {
   jsxFactory: 'react',
 };
 
-export function reducedDiagnostic(diagnostic: ts.Diagnostic): ReducedDiagnostic {
+export function reducedDiagnostic(
+  diagnostic: ts.Diagnostic,
+): ReducedDiagnostic {
   if (diagnostic.file) {
-    const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start!);
-    const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+    const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(
+      diagnostic.start!,
+    );
+    const message = ts.flattenDiagnosticMessageText(
+      diagnostic.messageText,
+      '\n',
+    );
 
     return {
       message,
@@ -35,11 +42,16 @@ export function reducedDiagnostic(diagnostic: ts.Diagnostic): ReducedDiagnostic 
   }
 }
 
-export function getDiagnostics(fileNames: string[], options: ts.CompilerOptions): ReducedDiagnostic[] {
+export function getDiagnostics(
+  fileNames: string[],
+  options: ts.CompilerOptions,
+): ReducedDiagnostic[] {
   const program = ts.createProgram(fileNames, options);
   const emitResult = program.emit();
 
-  const diagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+  const diagnostics = ts
+    .getPreEmitDiagnostics(program)
+    .concat(emitResult.diagnostics);
 
   return diagnostics.map(reducedDiagnostic);
 }

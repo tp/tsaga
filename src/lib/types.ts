@@ -79,7 +79,7 @@ export interface SagaEnvironment<State> {
   ): Task<Return>;
 }
 
-export type SagaEnvironmentCreator = <State>(
+export type SagaEnvironmentCreator<State> = (
   store: MiddlewareAPI<any, State>,
   waitForAction: WaitForAction,
   cancellationToken?: CancellationToken,

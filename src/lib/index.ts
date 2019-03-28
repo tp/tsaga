@@ -4,3 +4,4 @@ export {
   createTypedForEvery,
   createTypedForLatest,
 } from './createTypedWatchers';
+export { expectSaga } from './testing';
