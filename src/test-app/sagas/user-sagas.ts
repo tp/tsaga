@@ -54,5 +54,5 @@ export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(userSe
 
 export const watchForUserSelectorToCountImmediately = forEvery(
   userSelected,
-  watchForUserSelectorToCountIfNotChangedWithing3s.innerFunction,
+  watchForUserSelectorToCountIfNotChangedWithing3s.handler,
 );

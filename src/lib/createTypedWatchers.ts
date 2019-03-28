@@ -8,7 +8,7 @@ export function createTypedForEvery<State>(): <Payload>(
   return (actionCreator, saga) => {
     return {
       actionCreator,
-      innerFunction: saga,
+      handler: saga,
       type: 'every',
     };
   };
@@ -21,7 +21,7 @@ export function createTypedForLatest<State>(): <Payload>(
   return (actionCreator, saga) => {
     return {
       actionCreator,
-      innerFunction: saga,
+      handler: saga,
       type: 'latest',
     };
   };

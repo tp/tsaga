@@ -48,12 +48,16 @@ export function createSagaMiddleware(
           }
 
           const sagaId = id++;
-          const env = sagaEnvCreator(api, waitForAction, cancellationToken);
+          const env = sagaEnvCreator(
+            api,
+            waitForAction,
+            cancellationToken,
+          );
 
           runningSagas.set(
             sagaId,
             saga
-              .innerFunction(env, action.payload)
+              .handler(env, action.payload)
               .then(() => {
                 runningSagas.delete(sagaId);
 
