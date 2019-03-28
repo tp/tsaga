@@ -50,7 +50,7 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
           runningSagas.set(
             sagaId,
             saga
-              .innerFunction(env, action.payload)
+              .handler(env, action.payload)
               .then(() => {
                 runningSagas.delete(sagaId);
 
