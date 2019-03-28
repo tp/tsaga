@@ -33,9 +33,15 @@ export function spawns<State, P extends any[], T>(
   };
 }
 
-type ReturnedPromiseResolvedType<T> = T extends (...args: any[]) => Promise<infer R> ? R : never;
+type ReturnedPromiseResolvedType<T> = T extends (
+  ...args: any[]
+) => Promise<infer R>
+  ? R
+  : never;
 
-export function selects<State, T>(selector: (state: State, ...args: any[]) => T): ValueMockBuilder<State, T> {
+export function selects<State, T>(
+  selector: (state: State, ...args: any[]) => T,
+): ValueMockBuilder<State, T> {
   return {
     receiving: (value): ValueMock<State, T> => {
       return {
@@ -107,12 +113,19 @@ export async function testSagaWithState<StateT, Payload>(
   reducer: (state: StateT | undefined, action: Action<any>) => StateT,
   finalState: StateT,
 ) {
-  let state = initialState || reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
+  let state =
+    initialState ||
+    reducer(undefined, { type: '___INTERNAL___SETUP_MESSAGE', payload: null });
   state = reducer(initialState, initialAction);
 
-  let awaitingMessages: Array<{ actionCreator: ActionCreator<any>; promiseResolve: (action: any) => void }> = [];
+  let awaitingMessages: Array<{
+    actionCreator: ActionCreator<any>;
+    promiseResolve: (action: any) => void;
+  }> = [];
 
-  function waitForMessage<MessagePayload>(actionCreator: ActionCreator<MessagePayload>): Promise<MessagePayload> {
+  function waitForMessage<MessagePayload>(
+    actionCreator: ActionCreator<MessagePayload>,
+  ): Promise<MessagePayload> {
     return new Promise((resolve, reject) => {
       awaitingMessages.push({ actionCreator, promiseResolve: resolve });
     });
@@ -159,7 +172,9 @@ export async function testSagaWithState<StateT, Payload>(
         }
       }
 
-      awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
+      awaitingMessages = awaitingMessages.filter(
+        (config) => !isType(action, config.actionCreator),
+      );
 
       return action;
     },
@@ -183,10 +198,7 @@ export async function testSagaWithState<StateT, Payload>(
         result,
       };
     },
-    run: (
-      funcOrBoundEffect,
-      ...args
-    ) => {
+    run: (funcOrBoundEffect, ...args) => {
       for (const effect of mocks) {
         if (effect.type === 'run') {
           if (effect.funcOrBoundEffect === funcOrBoundEffect) {
