@@ -2,11 +2,11 @@ import { isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
-import { AnySaga, AwaitingAction, ErrorHandler, SagaMiddleware, WaitForAction } from './types';
+import { AnySaga, AwaitingAction, ErrorHandler, SagaEnvironmentCreator, SagaMiddleware, WaitForAction } from './types';
 
 export function createSagaMiddleware(
   sagas: AnySaga[],
-  sagaEnvCreator = createSagaEnvironment,
+  sagaEnvCreator: SagaEnvironmentCreator = createSagaEnvironment,
 ): SagaMiddleware {
   const runningSagas = new Map<number, Promise<any>>();
   const cancellationTokens = new Map<AnySaga, CancellationToken>();

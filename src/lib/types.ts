@@ -1,5 +1,6 @@
-import { Middleware, Dispatch } from 'redux';
+import { Middleware, MiddlewareAPI } from 'redux';
 import { Action, ActionCreator } from 'typescript-fsa';
+import { CancellationToken } from './CancellationToken';
 
 export interface Task<T> {
   result: T;
@@ -10,14 +11,14 @@ export type WaitForAction = <Payload>(actionCreator: ActionCreator<Payload>) => 
 
 export type FuncWithEnv<State, Args extends any[], T> = (env: SagaEnvironment<State>, ...args: Args) => T;
 
-export abstract class BoundEffect<Env, Params extends any[], ReturnType> {
+export abstract class BoundEffect<State, Params extends any[], ReturnType> {
   public readonly args: Params;
 
   constructor(...args: Params) {
     this.args = args;
   }
 
-  public abstract run(run: Env, ...args: Params): ReturnType;
+  public abstract run(run: SagaEnvironment<State>, ...args: Params): ReturnType;
 }
 
 export interface SagaEnvironment<State> {
@@ -71,6 +72,12 @@ export interface SagaEnvironment<State> {
     ...args: typeof effectOrEffectCreator extends BoundEffect<SagaEnvironment<State>, Args, T> ? [] : Args
   ): Task<T>;
 }
+
+export type SagaEnvironmentCreator = <State>(
+  store: MiddlewareAPI<any, State>,
+  waitForAction: WaitForAction,
+  cancellationToken?: CancellationToken,
+) => SagaEnvironment<State>;
 
 export interface Saga<State, Payload> {
   actionCreator: ActionCreator<Payload>;
