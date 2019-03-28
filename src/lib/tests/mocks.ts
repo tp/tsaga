@@ -14,10 +14,10 @@ export interface SelectMock<State, Return> {
   value: Return;
 }
 
-export interface RunMock<State, Args extends any[] = any[], > {
+export interface RunMock<State, Args extends any[] = any[]> {
   type: 'run';
   used: boolean;
-  fn: FuncWithEnv<State>
+  fn: FuncWithEnv<State>;
 }
 
 export interface SpawnMock {
@@ -25,11 +25,17 @@ export interface SpawnMock {
   used: boolean;
 }
 
-export type Mock<State> = CallMock<any> | SelectMock<State, any> | RunMock | SpawnMock;
+export type Mock<State> =
+  | CallMock<any>
+  | SelectMock<State, any>
+  | RunMock
+  | SpawnMock;
 export type Mocks<State> = Array<Mock<State>>;
 
 export function getSelectMocks<State>(mocks: Mocks<State>) {
-  return mocks.filter((mock): mock is SelectMock<State, any> => mock.type === 'select');
+  return mocks.filter(
+    (mock): mock is SelectMock<State, any> => mock.type === 'select',
+  );
 }
 
 export function getCallMocks<State>(mocks: Mocks<State>) {

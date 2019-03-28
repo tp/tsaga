@@ -1,9 +1,26 @@
 import { deepStrictEqual } from 'assert';
-import { applyMiddleware, createStore, DeepPartial, MiddlewareAPI, Reducer } from 'redux';
+import {
+  applyMiddleware,
+  createStore,
+  DeepPartial,
+  MiddlewareAPI,
+  Reducer,
+} from 'redux';
 import { Action, ActionCreator, isType } from 'typescript-fsa';
 import { createSagaMiddleware, Task } from '../';
-import { BoundEffect, FuncWithEnv, Saga, SagaEnvironment, SagaEnvironmentCreator } from '../types';
-import { SagaTimeoutError, TooManyAssertsError, UnusedMockError, NoActionError } from './errors';
+import {
+  BoundEffect,
+  FuncWithEnv,
+  Saga,
+  SagaEnvironment,
+  SagaEnvironmentCreator,
+} from '../types';
+import {
+  SagaTimeoutError,
+  TooManyAssertsError,
+  UnusedMockError,
+  NoActionError,
+} from './errors';
 import { getCallMocks, getSelectMocks, Mocks } from './mocks';
 
 interface ExpectSagaStage1<State, Payload> {
@@ -13,11 +30,13 @@ interface ExpectSagaStage1<State, Payload> {
   ): ExpectSagaStage2<State, Payload>;
 }
 
-interface ExpectSagaStage2<State, Payload> extends ExpectSagaStage3<State, Payload> {
+interface ExpectSagaStage2<State, Payload>
+  extends ExpectSagaStage3<State, Payload> {
   withMocks(mocks: Mocks<State>): ExpectSagaStage3<State, Payload>;
 }
 
-interface ExpectSagaStage3<State, Payload> extends ExpectSagaStage4<State, Payload> {
+interface ExpectSagaStage3<State, Payload>
+  extends ExpectSagaStage4<State, Payload> {
   toCall<Args extends any[], Return>(
     fn: (...args: Args) => Return,
     ...args: Args
@@ -25,12 +44,12 @@ interface ExpectSagaStage3<State, Payload> extends ExpectSagaStage4<State, Paylo
 
   toRun<Args extends any[], Return>(
     effect: BoundEffect<State, Args, Return>,
-    ...args: Args,
+    ...args: Args
   ): ExpectSagaStage3<State, Payload>;
 
   toRun<Args extends any[], Return>(
     effect: FuncWithEnv<State, Args, Return>,
-    ...args: Args,
+    ...args: Args
   ): ExpectSagaStage3<State, Payload>;
 
   toSpawn<Args extends any[], Return>(
@@ -81,15 +100,15 @@ interface CallAssert<Args extends any[], Return> {
 }
 
 interface RunAssert<State, Args extends any[], Return> {
-  type: 'run',
-  fn: FuncWithEnv<State, Args, Return> | BoundEffect<State, Args, Return>,
-  args: Args,
+  type: 'run';
+  fn: FuncWithEnv<State, Args, Return> | BoundEffect<State, Args, Return>;
+  args: Args;
 }
 
 interface SpawnAssert<State, Args extends any[], Return> {
-  type: 'spawn',
-  fn: FuncWithEnv<State, Args, Return> | BoundEffect<State, Args, Return>,
-  args: Args,
+  type: 'spawn';
+  fn: FuncWithEnv<State, Args, Return> | BoundEffect<State, Args, Return>;
+  args: Args;
 }
 
 type Assert<State> =
@@ -101,7 +120,10 @@ type Assert<State> =
 
 type Asserts<State> = Array<Assert<State>>;
 
-function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asserts<State>): SagaEnvironmentCreator {
+function createTestEnvironment<State>(
+  mocks: Mocks<State>,
+  asserts: Asserts<State>,
+): SagaEnvironmentCreator {
   const selectMocks = getSelectMocks(mocks);
   const callMocks = getCallMocks(mocks);
 
@@ -110,7 +132,11 @@ function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asserts<Stat
       dispatch(action) {
         const assert = asserts[0];
 
-        if (assert && assert.type === 'dispatch' && action.type === assert.action.type) {
+        if (
+          assert &&
+          assert.type === 'dispatch' &&
+          action.type === assert.action.type
+        ) {
           asserts.shift();
           deepStrictEqual(action, assert && assert.action);
         }
@@ -130,7 +156,10 @@ function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asserts<Stat
         return selector(store.getState(), ...args);
       },
 
-      async take<Payload>(actionCreator: ActionCreator<Payload>, timeout?: number): Promise<Payload> {
+      async take<Payload>(
+        actionCreator: ActionCreator<Payload>,
+        timeout?: number,
+      ): Promise<Payload> {
         const assert = asserts[0];
 
         if (assert && assert.type === 'take') {
@@ -146,15 +175,17 @@ function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asserts<Stat
         throw new Error();
       },
 
-      run<Args extends any[], T>(effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T>, ...args): T {
-
-      },
+      run<Args extends any[], T>(
+        effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T>,
+        ...args
+      ): T {},
 
       spawn<T, Args extends any[]>(
-        effectOrEffectCreator: BoundEffect<SagaEnvironment<State>, Args, T> | FuncWithEnv<State, Args, T>,
+        effectOrEffectCreator:
+          | BoundEffect<SagaEnvironment<State>, Args, T>
+          | FuncWithEnv<State, Args, T>,
         ...args
-      ): Task<T> {
-      },
+      ): Task<T> {},
 
       call(fn, ...args) {
         const assert = asserts[0];
@@ -225,7 +256,6 @@ class SagaTest<State, Payload> {
     } as any); // TODO
 
     return this;
-
   }
   public toRun<Args extends any[], Return>(
     fn: FuncWithEnv<State, Args, Return> | BoundEffect<State, Args, Return>,
@@ -253,7 +283,9 @@ class SagaTest<State, Payload> {
     return this;
   }
 
-  public toDispatch<DispatchPayload>(action: Action<DispatchPayload>): ExpectSagaStage3<State, Payload> {
+  public toDispatch<DispatchPayload>(
+    action: Action<DispatchPayload>,
+  ): ExpectSagaStage3<State, Payload> {
     this.asserts.push({
       type: 'dispatch',
       action,
@@ -262,7 +294,9 @@ class SagaTest<State, Payload> {
     return this;
   }
 
-  public toTake<TakePayload>(action: Action<TakePayload>): ExpectSagaStage3<State, Payload> {
+  public toTake<TakePayload>(
+    action: Action<TakePayload>,
+  ): ExpectSagaStage3<State, Payload> {
     this.asserts.push({
       type: 'take',
       action,
@@ -317,10 +351,7 @@ class SagaTest<State, Payload> {
     }
 
     if (this.finalState) {
-      deepStrictEqual(
-        store.getState(),
-        this.finalState,
-      );
+      deepStrictEqual(store.getState(), this.finalState);
     }
 
     for (const mock of this.mocks) {
@@ -331,6 +362,8 @@ class SagaTest<State, Payload> {
   }
 }
 
-export function expectSaga<State, Payload>(saga: Saga<State, Payload>): ExpectSagaStage1<State, Payload> {
+export function expectSaga<State, Payload>(
+  saga: Saga<State, Payload>,
+): ExpectSagaStage1<State, Payload> {
   return new SagaTest(saga);
 }
