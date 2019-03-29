@@ -182,7 +182,7 @@ class SagaTest<State, Payload> {
     return this;
   }
 
-  public async run(timeout: number = 5 * 1000) {
+  public async run(timeout: number = 10 * 1000) {
     const { middleware, sagaCompletion } = createSagaMiddleware(
       [this.saga],
       createTestEnvironment(this.mocks, this.asserts),
@@ -195,7 +195,7 @@ class SagaTest<State, Payload> {
     );
 
     if (this.action === null) {
-      throw new NoActionError('Missing action');
+      throw new NoActionError('Missing action for starting the saga');
     }
 
     store.dispatch(this.action);
@@ -208,28 +208,30 @@ class SagaTest<State, Payload> {
     ]);
 
     if (val === 'timeout') {
-      throw new SagaTimeoutError('');
+      throw new SagaTimeoutError(`Saga didn't finish within the timeout of ${timeout / 1000} seconds`);
     }
 
     if (this.asserts.length > 0) {
-      throw new TooManyAssertsError('');
+      throw new TooManyAssertsError(`Saga didn't full fil ${this.asserts.length} asserts`);
     }
 
     if (this.finalState) {
+      const state = store.getState();
+
       if (typeof this.finalState === 'object' && !Array.isArray(this.finalState)) {
         for (const key in this.finalState) {
           if (this.finalState.hasOwnProperty(key)) {
-            deepStrictEqual(store.getState()[key], this.finalState[key]);
+            deepStrictEqual(state[key], this.finalState[key]);
           }
         }
       } else {
-        deepStrictEqual(store.getState(), this.finalState);
+        deepStrictEqual(state, this.finalState);
       }
     }
 
     for (const mock of this.mocks) {
       if (!mock.used) {
-        throw new UnusedMockError('');
+        throw new UnusedMockError(`Saga test has an unused ${mock.type} mock`);
       }
     }
   }
