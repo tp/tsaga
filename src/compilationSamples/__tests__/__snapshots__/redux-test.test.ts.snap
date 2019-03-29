@@ -1,5 +1,22 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Generic types are not correctly inferred (TS 3.4) 1`] = `
+Array [
+  Object {
+    "character": 11,
+    "fileName": "typescript-3.4-inference.ts",
+    "line": 15,
+    "message": "Property 'toString' does not exist on type 'never'.",
+  },
+  Object {
+    "character": 2,
+    "fileName": "typescript-3.4-inference.ts",
+    "line": 21,
+    "message": "Type '\\"string\\"' is not assignable to type 'number'.",
+  },
+]
+`;
+
 exports[`Test forces compiler errors when invalid types are used 1`] = `
 Array [
   Object {
