@@ -42,7 +42,10 @@ const watchForPostText = forEvery(postText, async ($, { text }) => {
   const x = await $.select(textStateSelector);
 
   if (isLonger) {
-    await $.call(fetch, `http://localhost/api/stringCollector`, { method: 'POST', body: text });
+    await $.call(fetch, `http://localhost/api/stringCollector`, {
+      method: 'POST',
+      body: text,
+    });
   }
 });
 
