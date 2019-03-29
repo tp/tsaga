@@ -4,32 +4,19 @@ import { Action } from 'typescript-fsa';
 import { createSagaMiddleware } from '../';
 import { BoundFunc, Saga } from '../types';
 import { createTestEnvironment } from './create-test-env';
-import {
-  NoActionError,
-  SagaTimeoutError,
-  TooManyAssertsError,
-  UnusedMockError,
-} from './errors';
+import { NoActionError, SagaTimeoutError, TooManyAssertsError, UnusedMockError } from './errors';
 import { Mocks } from './mocks';
 
 interface ExpectSagaStage1<State, Payload> {
-  withReducer(
-    reducer: Reducer<State, any>,
-    initialState?: DeepPartial<State>,
-  ): ExpectSagaStage2<State, Payload>;
+  withReducer(reducer: Reducer<State, any>, initialState?: DeepPartial<State>): ExpectSagaStage2<State, Payload>;
 }
 
-interface ExpectSagaStage2<State, Payload>
-  extends ExpectSagaStage3<State, Payload> {
+interface ExpectSagaStage2<State, Payload> extends ExpectSagaStage3<State, Payload> {
   withMocks(mocks: Mocks<State>): ExpectSagaStage3<State, Payload>;
 }
 
-interface ExpectSagaStage3<State, Payload>
-  extends ExpectSagaStage4<State, Payload> {
-  toCall<Args extends any[], Return>(
-    fn: (...args: Args) => Return,
-    ...args: Args
-  ): ExpectSagaStage3<State, Payload>;
+interface ExpectSagaStage3<State, Payload> extends ExpectSagaStage4<State, Payload> {
+  toCall<Args extends any[], Return>(fn: (...args: Args) => Return, ...args: Args): ExpectSagaStage3<State, Payload>;
 
   toRun<Args extends any[], Return>(
     effect: BoundFunc<State, Args, Return>,
@@ -41,13 +28,9 @@ interface ExpectSagaStage3<State, Payload>
     ...args: Args
   ): ExpectSagaStage3<State, Payload>;
 
-  toDispatch<DispatchPayload>(
-    action: Action<DispatchPayload>,
-  ): ExpectSagaStage3<State, Payload>;
+  toDispatch<DispatchPayload>(action: Action<DispatchPayload>): ExpectSagaStage3<State, Payload>;
 
-  toTake<TakePayload>(
-    action: Action<TakePayload>,
-  ): ExpectSagaStage3<State, Payload>;
+  toTake<TakePayload>(action: Action<TakePayload>): ExpectSagaStage3<State, Payload>;
 }
 
 interface ExpectSagaStage4<State, Payload> {
@@ -118,10 +101,7 @@ class SagaTest<State, Payload> {
     this.saga = saga;
   }
 
-  public withReducer(
-    reducer: Reducer<State>,
-    initialState?: DeepPartial<State>,
-  ): ExpectSagaStage2<State, Payload> {
+  public withReducer(reducer: Reducer<State>, initialState?: DeepPartial<State>): ExpectSagaStage2<State, Payload> {
     this.reducer = reducer;
     this.initialState = initialState;
 
@@ -172,9 +152,7 @@ class SagaTest<State, Payload> {
     return this;
   }
 
-  public toDispatch<DispatchPayload>(
-    action: Action<DispatchPayload>,
-  ): ExpectSagaStage3<State, Payload> {
+  public toDispatch<DispatchPayload>(action: Action<DispatchPayload>): ExpectSagaStage3<State, Payload> {
     this.asserts.push({
       type: 'dispatch',
       action,
@@ -183,9 +161,7 @@ class SagaTest<State, Payload> {
     return this;
   }
 
-  public toTake<TakePayload>(
-    action: Action<TakePayload>,
-  ): ExpectSagaStage3<State, Payload> {
+  public toTake<TakePayload>(action: Action<TakePayload>): ExpectSagaStage3<State, Payload> {
     this.asserts.push({
       type: 'take',
       action,
@@ -251,8 +227,6 @@ class SagaTest<State, Payload> {
   }
 }
 
-export function expectSaga<State, Payload>(
-  saga: Saga<State, Payload>,
-): ExpectSagaStage1<State, Payload> {
+export function expectSaga<State, Payload>(saga: Saga<State, Payload>): ExpectSagaStage1<State, Payload> {
   return new SagaTest(saga);
 }

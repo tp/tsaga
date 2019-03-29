@@ -28,18 +28,12 @@ export interface SpawnMock<State, Return> {
   value: Return;
 }
 
-export type Mock<State> =
-  | CallMock<any>
-  | SelectMock<State, any>
-  | RunMock<State, any>
-  | SpawnMock<State, any>;
+export type Mock<State> = CallMock<any> | SelectMock<State, any> | RunMock<State, any> | SpawnMock<State, any>;
 
 export type Mocks<State> = Array<Mock<State>>;
 
 export const getSelectMocks = <State>(mocks: Mocks<State>) =>
-  mocks.filter(
-    (mock): mock is SelectMock<State, any> => mock.type === 'select',
-  );
+  mocks.filter((mock): mock is SelectMock<State, any> => mock.type === 'select');
 
 export const getCallMocks = <State>(mocks: Mocks<State>) =>
   mocks.filter((mock): mock is CallMock<any> => mock.type === 'call');
@@ -47,15 +41,10 @@ export const getCallMocks = <State>(mocks: Mocks<State>) =>
 export const getRunMocks = <State>(mocks: Mocks<State>) =>
   mocks.filter((mock): mock is RunMock<State, any> => mock.type === 'run');
 
-export const getMocks = <State, MockType extends Mock<State>>(
-  mocks: Mocks<State>,
-  type: Mock<State>['type'],
-) => mocks.filter((mock): mock is MockType => mock.type === type);
+export const getMocks = <State, MockType extends Mock<State>>(mocks: Mocks<State>, type: Mock<State>['type']) =>
+  mocks.filter((mock): mock is MockType => mock.type === type);
 
-export function call<Return>(
-  func: () => Return,
-  value: Return,
-): CallMock<Return> {
+export function call<Return>(func: () => Return, value: Return): CallMock<Return> {
   return {
     type: 'call',
     used: false,
@@ -64,10 +53,7 @@ export function call<Return>(
   };
 }
 
-export function select<State, Return>(
-  func: (state: State) => Return,
-  value: Return,
-): SelectMock<State, Return> {
+export function select<State, Return>(func: (state: State) => Return, value: Return): SelectMock<State, Return> {
   return {
     type: 'select',
     used: false,
@@ -76,10 +62,7 @@ export function select<State, Return>(
   };
 }
 
-export function run<State, Return>(
-  func: BoundFunc<State, any[], Return>,
-  value: Return,
-): RunMock<State, Return> {
+export function run<State, Return>(func: BoundFunc<State, any[], Return>, value: Return): RunMock<State, Return> {
   return {
     type: 'run',
     used: false,
@@ -88,10 +71,7 @@ export function run<State, Return>(
   };
 }
 
-export function spawn<State, Return>(
-  func: BoundFunc<State, any[], Return>,
-  value: Return,
-): SpawnMock<State, Return> {
+export function spawn<State, Return>(func: BoundFunc<State, any[], Return>, value: Return): SpawnMock<State, Return> {
   return {
     type: 'spawn',
     used: false,

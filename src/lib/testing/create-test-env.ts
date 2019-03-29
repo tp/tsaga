@@ -3,19 +3,9 @@ import { MiddlewareAPI } from 'redux';
 import { isType } from 'typescript-fsa';
 import { SagaEnvironment } from '../types';
 import { Asserts } from './index';
-import {
-  CallMock,
-  getMocks,
-  Mocks,
-  RunMock,
-  SelectMock,
-  SpawnMock,
-} from './mocks';
+import { CallMock, getMocks, Mocks, RunMock, SelectMock, SpawnMock } from './mocks';
 
-export function createTestEnvironment<State>(
-  mocks: Mocks<State>,
-  asserts: Asserts<State>,
-) {
+export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asserts<State>) {
   const selectMocks = getMocks<State, SelectMock<State, any>>(mocks, 'select');
   const callMocks = getMocks<State, CallMock<any>>(mocks, 'call');
   const runMocks = getMocks<State, RunMock<State, any>>(mocks, 'run');
@@ -26,11 +16,7 @@ export function createTestEnvironment<State>(
       dispatch(action) {
         const assert = asserts[0];
 
-        if (
-          assert &&
-          assert.type === 'dispatch' &&
-          action.type === assert.action.type
-        ) {
+        if (assert && assert.type === 'dispatch' && action.type === assert.action.type) {
           asserts.shift();
           deepStrictEqual(action, assert && assert.action);
         }

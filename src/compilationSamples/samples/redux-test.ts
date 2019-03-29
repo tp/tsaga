@@ -9,10 +9,7 @@ export type CountReducerState = {
   count: number;
 };
 
-export function sampleIdentityCountReducer(
-  previousState = { count: 0 },
-  message: any,
-): CountReducerState {
+export function sampleIdentityCountReducer(previousState = { count: 0 }, message: any): CountReducerState {
   return previousState;
 }
 
@@ -33,9 +30,7 @@ export const stringLongerThanCountSelector = createSelector(
 
 const createActionCreator = actionCreatorFactory('User');
 const postText = createActionCreator<{ text: string }>('set_count');
-const wrongAction = createActionCreator<{ notText: string }>(
-  'asdfasdfasdfasfd',
-);
+const wrongAction = createActionCreator<{ notText: string }>('asdfasdfasdfasfd');
 
 const forEvery = createTypedForEvery<CountReducerState>();
 
@@ -58,9 +53,7 @@ const watchForPostText = forEvery(postText, async ($, { text }) => {
 test('Saga test', async () => {
   expectSaga(watchForPostText)
     .withReducer(sampleIdentityCountReducer)
-    .withMocks([
-      select(stringLongerThanCountSelector, 5 /* should be `boolean` */),
-    ])
+    .withMocks([select(stringLongerThanCountSelector, 5 /* should be `boolean` */)])
     .toCall(fetch, new Response(undefined, { status: 200 }))
     .toCall(fetch, 404)
     .dispatch(wrongAction({ notText: 'asdf' }))

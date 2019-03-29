@@ -8,10 +8,7 @@ const initialState: AppState = {
   usersById: {},
 };
 
-export function userReducer(
-  state = initialState,
-  action: Action<any>,
-): AppState {
+export function userReducer(state = initialState, action: Action<any>): AppState {
   if (isType(action, userSelected)) {
     // console.error(`reducer: user selected`);
     return { ...state, selectedUser: action.payload.id };
