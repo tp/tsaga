@@ -5,9 +5,7 @@ import TimeoutError from './TimeoutError';
 import { SagaEnvironment, WaitForAction } from './types';
 
 function sleep(timeout: number): Promise<'timeout'> {
-  return new Promise((resolve) =>
-    setTimeout(() => resolve('timeout'), timeout),
-  );
+  return new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
 }
 
 export function createSagaEnvironment<State>(
@@ -21,7 +19,7 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      return store.dispatch(action);
+      store.dispatch(action);
     },
 
     select(selector, ...args) {
@@ -54,10 +52,7 @@ export function createSagaEnvironment<State>(
       }
 
       if (typeof timeout === 'number') {
-        const value = await Promise.race([
-          waitForAction(actionCreator),
-          sleep(timeout),
-        ]);
+        const value = await Promise.race([waitForAction(actionCreator), sleep(timeout)]);
 
         if (value === 'timeout') {
           throw new TimeoutError(actionCreator);
@@ -77,11 +72,7 @@ export function createSagaEnvironment<State>(
       }
 
       const childCancellationToken = new CancellationToken();
-      const childEnv = createSagaEnvironment(
-        store,
-        waitForAction,
-        childCancellationToken,
-      );
+      const childEnv = createSagaEnvironment(store, waitForAction, childCancellationToken);
 
       return {
         cancel: () => childCancellationToken.cancel(),

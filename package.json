@@ -21,7 +21,7 @@
     "rimraf": "^2.6.3",
     "ts-jest": "^24",
     "tslint": "^5.10.0",
-    "typescript": "3.4.0-rc"
+    "typescript": "3.4.1"
   },
   "peerDependencies": {
     "redux": "4.x"

@@ -7,14 +7,9 @@ export interface Task<T> {
   cancel: () => void;
 }
 
-export type WaitForAction = <Payload>(
-  actionCreator: ActionCreator<Payload>,
-) => Promise<Action<Payload>>;
+export type WaitForAction = <Payload>(actionCreator: ActionCreator<Payload>) => Promise<Action<Payload>>;
 
-export type BoundFunc<State, Args extends any[], T> = (
-  env: SagaEnvironment<State>,
-  ...args: Args
-) => T;
+export type BoundFunc<State, Args extends any[], T> = (env: SagaEnvironment<State>, ...args: Args) => T;
 
 export interface SagaEnvironment<State> {
   /**
@@ -22,7 +17,7 @@ export interface SagaEnvironment<State> {
    *
    * @param action - The action object.
    */
-  dispatch<Payload>(action: Action<Payload>): Action<Payload>;
+  dispatch<Payload>(action: Action<Payload>): void;
 
   /**
    * Run a selector with the first argument being the current state.
@@ -30,10 +25,7 @@ export interface SagaEnvironment<State> {
    * @param selector - The selector to call.
    * @param args - Additional arguments which will be passed to the selector after the state.
    */
-  select<Args extends any[], Return>(
-    selector: (state: State, ...args: Args) => Return,
-    ...args: Args
-  ): Return;
+  select<Args extends any[], Return>(selector: (state: State, ...args: Args) => Return, ...args: Args): Return;
 
   /**
    * Call a function. This is only a wrapper for cancellation and mocking in tests.
@@ -41,19 +33,13 @@ export interface SagaEnvironment<State> {
    * @param func - The function to execute.
    * @param params - The arguments for the function.
    */
-  call<Args extends any[], Return>(
-    func: (...params: Args) => Return,
-    ...params: Args
-  ): Return;
+  call<Args extends any[], Return>(func: (...params: Args) => Return, ...params: Args): Return;
 
   /**
    * Runs the given saga as an attached child.
    * Cancelling the parent will also cancel the child at the next opportunity.
    */
-  run<Args extends any[], Return>(
-    func: BoundFunc<State, Args, Return>,
-    ...args: Args
-  ): Return;
+  run<Args extends any[], Return>(func: BoundFunc<State, Args, Return>, ...args: Args): Return;
 
   /**
    * Wait for an action to be dispatched.
@@ -63,20 +49,14 @@ export interface SagaEnvironment<State> {
    * if no timeout specified, it will wait until the next action is dispatched.
    * @throws TimeoutError - Throws a TimeoutError when the timeout resolve before the action was fired.
    */
-  take<Payload>(
-    actionCreator: ActionCreator<Payload>,
-    timeout?: number,
-  ): Promise<Payload>;
+  take<Payload>(actionCreator: ActionCreator<Payload>, timeout?: number): Promise<Payload>;
 
   /**
    * Spawns the saga in a new context, returning a detached task
    *
    * Cancelling the returned `Task` will not cancel the parent.
    */
-  spawn<Args extends any[], Return>(
-    func: BoundFunc<State, Args, Return>,
-    ...args: Args
-  ): Task<Return>;
+  spawn<Args extends any[], Return>(func: BoundFunc<State, Args, Return>, ...args: Args): Task<Return>;
 }
 
 export type SagaEnvironmentCreator<State> = (
