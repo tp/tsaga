@@ -4,29 +4,27 @@ import { Saga, SagaEnvironment } from '.';
 import { BoundFunc, Task } from './types';
 
 export function calls<P extends any[], T>(
-  f: (...params: P) => T,
+  func: (...params: P) => T,
 ): ValueMockBuilder<any, T extends Promise<infer PT> ? PT : T> {
   // export function runs<R, T extends (...args: any[]) => void>(f: T): ValueMockBuilder<void> {
   return {
     receiving: (value) => {
       return {
         type: 'call',
-        func: f,
+        func,
         value,
       };
     },
   };
 }
 
-export function spawns<State, P extends any[], T>(
-  effectOrEffectCreator: BoundFunc<State, P, T>,
-): ValueMockBuilder<State, T> {
+export function spawns<State, P extends any[], T>(func: BoundFunc<State, P, T>): ValueMockBuilder<State, T> {
   // extends Promise<infer PT> ? PT : T
   return {
     receiving: (value) => {
       return {
         type: 'spawn',
-        funcOrBoundEffect: effectOrEffectCreator,
+        func,
         value,
       };
     },
@@ -47,14 +45,12 @@ export function selects<State, T>(selector: (state: State, ...args: any[]) => T)
   };
 }
 
-export function runs<State, P extends any[], T>(
-  funcOrEffectCreator: BoundFunc<State, P, T>,
-): ValueMockBuilder<State, T> {
+export function runs<State, P extends any[], T>(func: BoundFunc<State, P, T>): ValueMockBuilder<State, T> {
   return {
     receiving: (value): ValueMock<State, T> => {
       return {
         type: 'run',
-        funcOrBoundEffect: funcOrEffectCreator,
+        func,
         value,
       };
     },
@@ -81,7 +77,7 @@ type ValueMock<StateT, T> =
     }
   | {
       type: 'run';
-      funcOrBoundEffect: BoundFunc<StateT, any, any>;
+      func: BoundFunc<StateT, any, any>;
       value: T;
     }
   | {
@@ -91,7 +87,7 @@ type ValueMock<StateT, T> =
     }
   | {
       type: 'spawn';
-      funcOrBoundEffect: BoundFunc<StateT, any, T>;
+      func: BoundFunc<StateT, any, T>;
       value: T;
     }
   | {
@@ -123,33 +119,33 @@ export async function testSagaWithState<StateT, Payload>(
 
   const testContext: SagaEnvironment<StateT> = {
     call: (f, ...params) => {
-      for (const effect of mocks) {
-        if (effect.type === 'call' && effect.func === f) {
+      for (const mock of mocks) {
+        if (mock.type === 'call' && mock.func === f) {
           /* TODO: & check args */
-          mocks = mocks.filter((e) => e !== effect);
-          return effect.value;
+          mocks = mocks.filter((e) => e !== mock);
+          return mock.value;
         }
       }
 
       return f(...params);
     },
     select: (selector, ...args) => {
-      for (const effect of mocks) {
-        if (effect.type === 'select' && effect.selector === selector) {
-          mocks = mocks.filter((e) => e !== effect);
-          return effect.value;
+      for (const mock of mocks) {
+        if (mock.type === 'select' && mock.selector === selector) {
+          mocks = mocks.filter((e) => e !== mock);
+          return mock.value;
         }
       }
 
       return selector(state, ...args);
     },
     dispatch: (action) => {
-      for (const effect of mocks) {
-        if (effect.type === 'dispatch') {
-          if (effect.action.type === action.type) {
-            deepStrictEqual(effect.action.payload, action.payload);
+      for (const mock of mocks) {
+        if (mock.type === 'dispatch') {
+          if (mock.action.type === action.type) {
+            deepStrictEqual(mock.action.payload, action.payload);
 
-            mocks = mocks.filter((e) => e !== effect);
+            mocks = mocks.filter((e) => e !== mock);
           }
         }
       }
@@ -164,18 +160,18 @@ export async function testSagaWithState<StateT, Payload>(
 
       awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
     },
-    spawn: (funcOrBoundEffect, ...args) => {
+    spawn: (func, ...args) => {
       // TODO: Create detached context / add cancellation to tests?
-      for (const effect of mocks) {
-        if (effect.type === 'spawn') {
-          if (effect.funcOrBoundEffect === funcOrBoundEffect) {
-            mocks = mocks.filter((e) => e !== effect);
-            return effect.value;
+      for (const mock of mocks) {
+        if (mock.type === 'spawn') {
+          if (mock.func === func) {
+            mocks = mocks.filter((e) => e !== mock);
+            return mock.value;
           }
         }
       }
 
-      const result = funcOrBoundEffect(testContext, ...args);
+      const result = func(testContext, ...args);
 
       return {
         cancel: () => {
@@ -184,17 +180,17 @@ export async function testSagaWithState<StateT, Payload>(
         result,
       };
     },
-    run: (funcOrBoundEffect, ...args) => {
-      for (const effect of mocks) {
-        if (effect.type === 'run') {
-          if (effect.funcOrBoundEffect === funcOrBoundEffect) {
-            mocks = mocks.filter((e) => e !== effect);
-            return effect.value;
+    run: (func, ...args) => {
+      for (const mock of mocks) {
+        if (mock.type === 'run') {
+          if (mock.func === func) {
+            mocks = mocks.filter((e) => e !== mock);
+            return mock.value;
           }
         }
       }
 
-      return funcOrBoundEffect(testContext, ...args);
+      return func(testContext, ...args);
     },
     take: (actionCreator: ActionCreator<any>) => {
       return waitForMessage(actionCreator);
