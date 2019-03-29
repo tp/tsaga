@@ -19,7 +19,7 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      return store.dispatch(action);
+      store.dispatch(action);
     },
 
     select(selector, ...args) {

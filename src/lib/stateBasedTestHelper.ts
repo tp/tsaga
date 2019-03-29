@@ -163,8 +163,6 @@ export async function testSagaWithState<StateT, Payload>(
       }
 
       awaitingMessages = awaitingMessages.filter((config) => !isType(action, config.actionCreator));
-
-      return action;
     },
     spawn: (funcOrBoundEffect, ...args) => {
       // TODO: Create detached context / add cancellation to tests?
