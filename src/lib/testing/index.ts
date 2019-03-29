@@ -216,7 +216,15 @@ class SagaTest<State, Payload> {
     }
 
     if (this.finalState) {
-      deepStrictEqual(store.getState(), this.finalState);
+      if (typeof this.finalState === 'object' && !Array.isArray(this.finalState)) {
+        for (const key in this.finalState) {
+          if (this.finalState.hasOwnProperty(key)) {
+            deepStrictEqual(store.getState()[key], this.finalState[key]);
+          }
+        }
+      } else {
+        deepStrictEqual(store.getState(), this.finalState);
+      }
     }
 
     for (const mock of this.mocks) {
