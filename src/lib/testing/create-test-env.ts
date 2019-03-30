@@ -2,6 +2,7 @@ import { MiddlewareAPI } from 'redux';
 import { SagaEnvironment } from '../types';
 import { Asserts } from './index';
 import { CallMock, getMocks, Mocks, RunMock, SelectMock, SpawnMock } from './mocks';
+import { MissingTakeError } from './errors';
 
 export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asserts<State>) {
   const selectMocks = getMocks<State, SelectMock<State, any>>(mocks, 'select');
@@ -18,9 +19,9 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
           asserts.shift();
           try {
             expect(action).toEqual(assert.action);
-          } catch (e) {
-            Error.captureStackTrace(e, env.dispatch);
-            throw e;
+          } catch (error) {
+            Error.captureStackTrace(error, env.dispatch);
+            throw error;
           }
         }
 
@@ -48,15 +49,20 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
 
           try {
             expect(assert.action.type).toEqual(actionCreator.type);
-          } catch (e) {
-            Error.captureStackTrace(e, env.take);
-            throw e;
+          } catch (error) {
+            Error.captureStackTrace(error, env.take);
+            throw error;
           }
 
           return assert.action.payload;
         }
 
-        throw new Error();
+        try {
+          throw new MissingTakeError(`Missing take assertion for action ${actionCreator.type}`);
+        } catch (error) {
+          Error.captureStackTrace(error, env.take);
+          throw error;
+        }
       },
 
       run(func, ...args) {
@@ -67,9 +73,9 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
 
           try {
             expect(args).toEqual(assert.args);
-          } catch (e) {
-            Error.captureStackTrace(e, env.run);
-            throw e;
+          } catch (error) {
+            Error.captureStackTrace(error, env.run);
+            throw error;
           }
         }
 
@@ -92,9 +98,9 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
 
           try {
             expect(args).toEqual(assert.args);
-          } catch (e) {
-            Error.captureStackTrace(e, env.spawn);
-            throw e;
+          } catch (error) {
+            Error.captureStackTrace(error, env.spawn);
+            throw error;
           }
         }
 
@@ -127,9 +133,9 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
 
           try {
             expect(args).toEqual(assert.args);
-          } catch (e) {
-            Error.captureStackTrace(e, env.call);
-            throw e;
+          } catch (error) {
+            Error.captureStackTrace(error, env.call);
+            throw error;
           }
         }
 

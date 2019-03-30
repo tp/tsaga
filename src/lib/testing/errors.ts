@@ -21,3 +21,9 @@ export class NoActionError extends Error {
     super(message);
   }
 }
+
+export class MissingTakeError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}

@@ -23,12 +23,7 @@ export function createTestSagaMiddleware<State>(
 
           runningSagas.set(
             sagaId,
-            saga.handler(env, action.payload).catch((e) => {
-              // console.log(e.stack);
-              // e.stack = new Error().stack;
-              // Error.captureStackTrace(e);
-              throw e;
-            }),
+            saga.handler(env, action.payload),
           );
         }
       }
