@@ -5,28 +5,28 @@ Array [
   Object {
     "character": 27,
     "fileName": "redux-test.ts",
-    "line": 47,
+    "line": 42,
     "message": "Argument of type '(state: { text: string; }) => string' is not assignable to parameter of type '(state: CountReducerState) => string'.
   Types of parameters 'state' and 'state' are incompatible.
     Property 'text' is missing in type 'CountReducerState' but required in type '{ text: string; }'.",
   },
   Object {
-    "character": 13,
+    "character": 23,
     "fileName": "redux-test.ts",
-    "line": 61,
+    "line": 55,
     "message": "Argument of type 'OutputParametricSelector<CountReducerState, string, boolean, (res1: string, res2: number) => boolean>' is not assignable to parameter of type '(state: CountReducerState) => boolean'.",
   },
   Object {
     "character": 19,
     "fileName": "redux-test.ts",
-    "line": 63,
+    "line": 56,
     "message": "Argument of type 'Response' is not assignable to parameter of type 'string | Request'.
   Type 'Response' is missing the following properties from type 'Request': context, method, redirect, referrer, and 5 more.",
   },
   Object {
     "character": 24,
     "fileName": "redux-test.ts",
-    "line": 72,
+    "line": 65,
     "message": "Type 'string' is not assignable to type 'number'.",
   },
 ]
