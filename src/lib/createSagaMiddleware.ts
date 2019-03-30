@@ -2,12 +2,9 @@ import { isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
-import { AnySaga, AwaitingAction, ErrorHandler, SagaEnvironmentCreator, SagaMiddleware, WaitForAction } from './types';
+import { AnySaga, AwaitingAction, ErrorHandler, SagaMiddleware, WaitForAction } from './types';
 
-export function createSagaMiddleware(
-  sagas: AnySaga[],
-  sagaEnvCreator: SagaEnvironmentCreator<any> = createSagaEnvironment,
-): SagaMiddleware {
+export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
   const runningSagas = new Map<number, Promise<any>>();
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
   let id = 0;
@@ -48,7 +45,7 @@ export function createSagaMiddleware(
           }
 
           const sagaId = id++;
-          const env = sagaEnvCreator(api, waitForAction, cancellationToken);
+          const env = createSagaEnvironment(api, waitForAction, cancellationToken);
 
           runningSagas.set(
             sagaId,

@@ -3,9 +3,9 @@ import { Action } from 'typescript-fsa';
 import { createSagaMiddleware } from '../createSagaMiddleware';
 import { BoundFunc, Saga } from '../types';
 import { createTestEnvironment } from './create-test-env';
+import { createTestSagaMiddleware } from './create-test-saga-middleware';
 import { NoActionError, SagaTimeoutError, TooManyAssertsError, UnusedMockError } from './errors';
 import { Mocks } from './mocks';
-import { createTestSagaMiddleware } from './create-test-saga-middleware';
 
 interface ExpectSagaStage1<State, Payload> {
   withReducer(reducer: Reducer<State, any>, initialState?: DeepPartial<State>): ExpectSagaStage2<State, Payload>;
@@ -183,11 +183,7 @@ class SagaTest<State, Payload> {
   }
 
   public async run(timeout: number = 10 * 1000) {
-    const { middleware, sagaCompletion } = createTestSagaMiddleware(
-      [this.saga],
-      this.asserts,
-      this.mocks,
-    );
+    const { middleware, sagaCompletion } = createTestSagaMiddleware([this.saga], this.asserts, this.mocks);
 
     const store = createStore(
       this.reducer || ((state = {} as any) => state),

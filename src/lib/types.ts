@@ -1,6 +1,5 @@
-import { Middleware, MiddlewareAPI } from 'redux';
+import { Middleware } from 'redux';
 import { Action, ActionCreator } from 'typescript-fsa';
-import { CancellationToken } from './CancellationToken';
 
 export interface Task<T> {
   result: T;
@@ -58,12 +57,6 @@ export interface SagaEnvironment<State> {
    */
   spawn<Args extends any[], Return>(func: BoundFunc<State, Args, Return>, ...args: Args): Task<Return>;
 }
-
-export type SagaEnvironmentCreator<State> = (
-  store: MiddlewareAPI<any, State>,
-  waitForAction: WaitForAction,
-  cancellationToken?: CancellationToken,
-) => SagaEnvironment<State>;
 
 export interface Saga<State, Payload> {
   actionCreator: ActionCreator<Payload>;

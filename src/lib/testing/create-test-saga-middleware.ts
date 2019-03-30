@@ -1,8 +1,8 @@
 import { isType } from 'typescript-fsa';
 import { AnySaga, SagaMiddleware } from '../types';
+import { createTestEnvironment } from './create-test-env';
 import { Asserts } from './index';
 import { Mocks } from './mocks';
-import { createTestEnvironment } from './create-test-env';
 
 export function createTestSagaMiddleware<State>(
   sagas: AnySaga[],
@@ -21,12 +21,15 @@ export function createTestSagaMiddleware<State>(
           const sagaId = id++;
           const env = createTestEnvironment(mocks, asserts)(api);
 
-          runningSagas.set(sagaId, saga.handler(env, action.payload).catch((e) => {
-            // console.log(e.stack);
-            // e.stack = new Error().stack;
-            // Error.captureStackTrace(e);
-            throw e;
-          }));
+          runningSagas.set(
+            sagaId,
+            saga.handler(env, action.payload).catch((e) => {
+              // console.log(e.stack);
+              // e.stack = new Error().stack;
+              // Error.captureStackTrace(e);
+              throw e;
+            }),
+          );
         }
       }
     },
