@@ -1,8 +1,6 @@
 import { applyMiddleware, createStore, DeepPartial, Reducer } from 'redux';
 import { Action } from 'typescript-fsa';
-import { createSagaMiddleware } from '../createSagaMiddleware';
 import { BoundFunc, Saga } from '../types';
-import { createTestEnvironment } from './create-test-env';
 import { createTestSagaMiddleware } from './create-test-saga-middleware';
 import { NoActionError, SagaTimeoutError, TooManyAssertsError, UnusedMockError } from './errors';
 import { Mocks } from './mocks';
