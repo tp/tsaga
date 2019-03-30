@@ -1,8 +1,8 @@
 import { MiddlewareAPI } from 'redux';
 import { SagaEnvironment } from '../types';
+import { MissingTakeError } from './errors';
 import { Asserts } from './index';
 import { CallMock, getMocks, Mocks, RunMock, SelectMock, SpawnMock } from './mocks';
-import { MissingTakeError } from './errors';
 
 export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asserts<State>) {
   const selectMocks = getMocks<State, SelectMock<State, any>>(mocks, 'select');

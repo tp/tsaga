@@ -21,10 +21,7 @@ export function createTestSagaMiddleware<State>(
           const sagaId = id++;
           const env = createTestEnvironment(mocks, asserts)(api);
 
-          runningSagas.set(
-            sagaId,
-            saga.handler(env, action.payload),
-          );
+          runningSagas.set(sagaId, saga.handler(env, action.payload));
         }
       }
     },
