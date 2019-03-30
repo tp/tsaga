@@ -1,11 +1,11 @@
-import { deepStrictEqual } from 'assert';
 import { applyMiddleware, createStore, DeepPartial, Reducer } from 'redux';
 import { Action } from 'typescript-fsa';
-import { createSagaMiddleware } from '../';
+import { createSagaMiddleware } from '../createSagaMiddleware';
 import { BoundFunc, Saga } from '../types';
 import { createTestEnvironment } from './create-test-env';
 import { NoActionError, SagaTimeoutError, TooManyAssertsError, UnusedMockError } from './errors';
 import { Mocks } from './mocks';
+import { createTestSagaMiddleware } from './create-test-saga-middleware';
 
 interface ExpectSagaStage1<State, Payload> {
   withReducer(reducer: Reducer<State, any>, initialState?: DeepPartial<State>): ExpectSagaStage2<State, Payload>;
@@ -183,9 +183,10 @@ class SagaTest<State, Payload> {
   }
 
   public async run(timeout: number = 10 * 1000) {
-    const { middleware, sagaCompletion } = createSagaMiddleware(
+    const { middleware, sagaCompletion } = createTestSagaMiddleware(
       [this.saga],
-      createTestEnvironment(this.mocks, this.asserts),
+      this.asserts,
+      this.mocks,
     );
 
     const store = createStore(
@@ -221,11 +222,11 @@ class SagaTest<State, Payload> {
       if (typeof this.finalState === 'object' && !Array.isArray(this.finalState)) {
         for (const key in this.finalState) {
           if (this.finalState.hasOwnProperty(key)) {
-            deepStrictEqual(state[key], this.finalState[key]);
+            expect(state[key]).toEqual(this.finalState[key]);
           }
         }
       } else {
-        deepStrictEqual(state, this.finalState);
+        expect(state).toEqual(this.finalState);
       }
     }
 

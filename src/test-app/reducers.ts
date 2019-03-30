@@ -22,7 +22,7 @@ export function userReducer(state = initialState, action: Action<any>): AppState
       },
     };
   } else if (isType(action, setCount)) {
-    console.error(`reducer: set count`, action.payload);
+    // console.error(`reducer: set count`, action.payload);
     return {
       ...state,
       count: action.payload.count,

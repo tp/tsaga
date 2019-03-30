@@ -32,7 +32,7 @@ test('Test helper with mocked select', async () => {
 test('Test helper asserting on message', async () => {
   return expectSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
     .withReducer(userReducer)
-    .withMocks([select(getCount, 5)])
+    .withMocks([select(getCount, 9999)])
     .toCall(sleep, 3000)
     .toDispatch(setCount({ count: 6 }))
     .dispatch(userSelected({ id: 2 }))

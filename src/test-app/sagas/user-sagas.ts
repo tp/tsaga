@@ -31,23 +31,23 @@ export const watchForUserSelectToLoad = forLatest(userSelected, async ($, { id }
 
     $.dispatch(userLoaded({ user: loadedUser }));
   } else {
-    console.log(`not loading user, already present`);
+    // console.log(`not loading user, already present`);
   }
 });
 
 export const increaseCounter = ($: AppEnv) => {
   const count = $.select(getCount);
-  console.error(`about to set new count:`, count + 1);
+  // console.error(`about to set new count:`, count + 1);
 
   $.dispatch(setCount({ count: count + 1 }));
 };
 
 export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(userSelected, async ($, payload) => {
-  console.error(`about to sleep`);
+  // console.error(`about to sleep`);
 
   await $.call(sleep, 3000);
 
-  console.error(`sleep done`);
+  // console.error(`sleep done`);
 
   await $.run(increaseCounter);
 });

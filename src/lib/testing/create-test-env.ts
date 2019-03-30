@@ -1,6 +1,4 @@
-import { deepStrictEqual } from 'assert';
 import { MiddlewareAPI } from 'redux';
-import { isType } from 'typescript-fsa';
 import { SagaEnvironment } from '../types';
 import { Asserts } from './index';
 import { CallMock, getMocks, Mocks, RunMock, SelectMock, SpawnMock } from './mocks';
@@ -18,10 +16,15 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
 
         if (assert && assert.type === 'dispatch' && action.type === assert.action.type) {
           asserts.shift();
-          deepStrictEqual(action, assert && assert.action);
+          try {
+            expect(action).toEqual(assert.action);
+          } catch (e) {
+            Error.captureStackTrace(e, env.dispatch);
+            throw e;
+          }
         }
 
-        return store.dispatch(action);
+        store.dispatch(action);
       },
 
       select(selector, ...args) {
@@ -42,8 +45,12 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
 
         if (assert && assert.type === 'take') {
           asserts.shift();
-          if (!isType(assert.action, actionCreator)) {
-            throw new Error();
+
+          try {
+            expect(assert.action.type).toEqual(actionCreator.type);
+          } catch (e) {
+            Error.captureStackTrace(e, env.take);
+            throw e;
           }
 
           return assert.action.payload;
@@ -58,7 +65,12 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
         if (assert && assert.type === 'run' && assert.func === func) {
           asserts.shift();
 
-          deepStrictEqual(args, assert.args);
+          try {
+            expect(args).toEqual(assert.args);
+          } catch (e) {
+            Error.captureStackTrace(e, env.run);
+            throw e;
+          }
         }
 
         const runMock = runMocks.find((mock) => mock.func === func);
@@ -78,7 +90,12 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
         if (assert && assert.type === 'spawn' && assert.func === func) {
           asserts.shift();
 
-          deepStrictEqual(args, assert.args);
+          try {
+            expect(args).toEqual(assert.args);
+          } catch (e) {
+            Error.captureStackTrace(e, env.spawn);
+            throw e;
+          }
         }
 
         const spawnMock = spawnMocks.find((mock) => mock.func === func);
@@ -108,7 +125,12 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
         if (assert && assert.type === 'call' && assert.func === fn) {
           asserts.shift();
 
-          deepStrictEqual(args, assert.args);
+          try {
+            expect(args).toEqual(assert.args);
+          } catch (e) {
+            Error.captureStackTrace(e, env.call);
+            throw e;
+          }
         }
 
         const callMock = callMocks.find((mock) => mock.func === fn);
