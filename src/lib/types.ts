@@ -16,7 +16,7 @@ export interface SagaEnvironment<State> {
    *
    * @param action - The action object.
    */
-  dispatch<Payload>(action: Action<Payload>): Action<Payload>;
+  dispatch<Payload>(action: Action<Payload>): void;
 
   /**
    * Run a selector with the first argument being the current state.
