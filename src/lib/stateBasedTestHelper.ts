@@ -1,7 +1,7 @@
 import { deepStrictEqual, fail } from 'assert';
 import { Action, ActionCreator, isType } from 'typescript-fsa';
 import { Saga, SagaEnvironment } from '.';
-import { BoundFunc, Task } from './types';
+import { SagaFunc } from './types';
 
 export function calls<P extends any[], T>(
   func: (...params: P) => T,
@@ -18,7 +18,7 @@ export function calls<P extends any[], T>(
   };
 }
 
-export function spawns<State, P extends any[], T>(func: BoundFunc<State, P, T>): ValueMockBuilder<State, T> {
+export function spawns<State, P extends any[], T>(func: SagaFunc<State, P, T>): ValueMockBuilder<State, T> {
   // extends Promise<infer PT> ? PT : T
   return {
     receiving: (value) => {
@@ -45,7 +45,7 @@ export function selects<State, T>(selector: (state: State, ...args: any[]) => T)
   };
 }
 
-export function runs<State, P extends any[], T>(func: BoundFunc<State, P, T>): ValueMockBuilder<State, T> {
+export function runs<State, P extends any[], T>(func: SagaFunc<State, P, T>): ValueMockBuilder<State, T> {
   return {
     receiving: (value): ValueMock<State, T> => {
       return {
@@ -77,7 +77,7 @@ type ValueMock<StateT, T> =
     }
   | {
       type: 'run';
-      func: BoundFunc<StateT, any, any>;
+      func: SagaFunc<StateT, any, any>;
       value: T;
     }
   | {
@@ -87,7 +87,7 @@ type ValueMock<StateT, T> =
     }
   | {
       type: 'spawn';
-      func: BoundFunc<StateT, any, T>;
+      func: SagaFunc<StateT, any, T>;
       value: T;
     }
   | {
