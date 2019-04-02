@@ -1,4 +1,4 @@
-import { BoundFunc } from '../types';
+import { SagaFunc } from '../types';
 
 export interface CallMock<Return> {
   type: 'call';
@@ -17,14 +17,14 @@ export interface SelectMock<State, Return> {
 export interface RunMock<State, Return> {
   type: 'run';
   used: boolean;
-  func: BoundFunc<State, any[], Return>;
+  func: SagaFunc<State, any[], Return>;
   value: Return;
 }
 
 export interface SpawnMock<State, Return> {
   type: 'spawn';
   used: boolean;
-  func: BoundFunc<State, any[], Return>;
+  func: SagaFunc<State, any[], Return>;
   value: Return;
 }
 
@@ -62,7 +62,7 @@ export function select<State, Return>(func: (state: State) => Return, value: Ret
   };
 }
 
-export function run<State, Return>(func: BoundFunc<State, any[], Return>, value: Return): RunMock<State, Return> {
+export function run<State, Return>(func: SagaFunc<State, any[], Return>, value: Return): RunMock<State, Return> {
   return {
     type: 'run',
     used: false,
@@ -71,7 +71,7 @@ export function run<State, Return>(func: BoundFunc<State, any[], Return>, value:
   };
 }
 
-export function spawn<State, Return>(func: BoundFunc<State, any[], Return>, value: Return): SpawnMock<State, Return> {
+export function spawn<State, Return>(func: SagaFunc<State, any[], Return>, value: Return): SpawnMock<State, Return> {
   return {
     type: 'spawn',
     used: false,

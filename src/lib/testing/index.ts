@@ -1,6 +1,6 @@
 import { applyMiddleware, createStore, DeepPartial, Reducer } from 'redux';
 import { Action } from 'typescript-fsa';
-import { BoundFunc, Saga } from '../types';
+import { SagaFunc, Saga } from '../types';
 import { createTestSagaMiddleware } from './create-test-saga-middleware';
 import { NoActionError, SagaTimeoutError, TooManyAssertsError, UnusedMockError } from './errors';
 import { Mocks } from './mocks';
@@ -17,12 +17,12 @@ interface ExpectSagaStage3<State, Payload> extends ExpectSagaStage4<State, Paylo
   toCall<Args extends any[], Return>(fn: (...args: Args) => Return, ...args: Args): ExpectSagaStage3<State, Payload>;
 
   toRun<Args extends any[], Return>(
-    effect: BoundFunc<State, Args, Return>,
+    effect: SagaFunc<State, Args, Return>,
     ...args: Args
   ): ExpectSagaStage3<State, Payload>;
 
   toSpawn<Args extends any[], Return>(
-    effect: BoundFunc<State, Args, Return>,
+    effect: SagaFunc<State, Args, Return>,
     ...args: Args
   ): ExpectSagaStage3<State, Payload>;
 
@@ -61,13 +61,13 @@ interface CallAssert<Args extends any[], Return> {
 
 interface RunAssert<State, Args extends any[], Return> {
   type: 'run';
-  func: BoundFunc<State, Args, Return>;
+  func: SagaFunc<State, Args, Return>;
   args: Args;
 }
 
 interface SpawnAssert<State, Args extends any[], Return> {
   type: 'spawn';
-  func: BoundFunc<State, Args, Return>;
+  func: SagaFunc<State, Args, Return>;
   args: Args;
 }
 
@@ -125,7 +125,7 @@ class SagaTest<State, Payload> {
     return this;
   }
   public toRun<Args extends any[], Return>(
-    func: BoundFunc<State, Args, Return>,
+    func: SagaFunc<State, Args, Return>,
     ...args: Args
   ): ExpectSagaStage3<State, Payload> {
     this.asserts.push({
@@ -138,7 +138,7 @@ class SagaTest<State, Payload> {
   }
 
   public toSpawn<Args extends any[], Return>(
-    func: BoundFunc<State, Args, Return>,
+    func: SagaFunc<State, Args, Return>,
     ...args: Args
   ): ExpectSagaStage3<State, Payload> {
     this.asserts.push({
