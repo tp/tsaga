@@ -8,7 +8,7 @@ export interface Task<T> {
 
 export type WaitForAction = <Payload>(actionCreator: ActionCreator<Payload>) => Promise<Action<Payload>>;
 
-export type BoundFunc<State, Args extends any[], T> = (env: SagaEnvironment<State>, ...args: Args) => T;
+export type SagaFunc<State, Args extends any[], T> = (env: SagaEnvironment<State>, ...args: Args) => T;
 
 export interface SagaEnvironment<State> {
   /**
@@ -38,7 +38,7 @@ export interface SagaEnvironment<State> {
    * Runs the given saga as an attached child.
    * Cancelling the parent will also cancel the child at the next opportunity.
    */
-  run<Args extends any[], Return>(func: BoundFunc<State, Args, Return>, ...args: Args): Return;
+  run<Args extends any[], Return>(func: SagaFunc<State, Args, Return>, ...args: Args): Return;
 
   /**
    * Wait for an action to be dispatched.
@@ -55,7 +55,7 @@ export interface SagaEnvironment<State> {
    *
    * Cancelling the returned `Task` will not cancel the parent.
    */
-  spawn<Args extends any[], Return>(func: BoundFunc<State, Args, Return>, ...args: Args): Task<Return>;
+  spawn<Args extends any[], Return>(func: SagaFunc<State, Args, Return>, ...args: Args): Task<Return>;
 }
 
 export interface Saga<State, Payload> {
