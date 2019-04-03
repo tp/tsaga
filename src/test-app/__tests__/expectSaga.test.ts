@@ -52,7 +52,22 @@ test("Test helper asserting on message, fails of message doesn't match", async (
       .toHaveFinalState({ count: 6, selectedUser: 2, usersById: {} })
       .run();
   } catch (e) {
-    expect(e.message).toMatch('Difference:');
+    expect(e.message).toMatchInlineSnapshot(`
+"[2mexpect([22m[31mreceived[39m[2m).toEqual([22m[32mexpected[39m[2m)[22m
+
+Difference:
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Object {[22m
+[2m    \\"payload\\": Object {[22m
+[32m-     \\"count\\": 9999,[39m
+[31m+     \\"count\\": 1,[39m
+[2m    },[22m
+[2m    \\"type\\": \\"User/set_count\\",[22m
+[2m  }[22m"
+`);
 
     return;
   }
