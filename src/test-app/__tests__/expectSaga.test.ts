@@ -52,6 +52,8 @@ test("Test helper asserting on message, fails of message doesn't match", async (
       .toHaveFinalState({ count: 6, selectedUser: 2, usersById: {} })
       .run();
   } catch (e) {
+    expect(e.message).toMatch('Difference:');
+
     return;
   }
 
