@@ -1,8 +1,9 @@
 // tslint:disable
 import fetch, { Response } from 'node-fetch';
-import { testSagaWithState, createTypedForEvery, calls, selects } from '../../lib';
+import { createTypedForEvery, expectSaga } from '../../lib';
 import actionCreatorFactory from 'typescript-fsa';
 import { createSelector } from 'reselect';
+import { select } from '../../lib/testing/mocks';
 
 export type CountReducerState = {
   count: number;
@@ -50,28 +51,18 @@ const watchForPostText = forEvery(postText, async ($, { text }) => {
 });
 
 test('Saga test', async () => {
-  testSagaWithState(
-    watchForPostText,
-    //  TODO: This should also fail on alternate message with the same payload (should take the action creator from the watcher, not saga)
-    wrongAction({ notText: 'asdf' }) /* should be `postText` */,
-    [
-      selects(stringLongerThanCountSelector /* TODO: `sample` */).receiving(5 /* should be `boolean` */),
-      calls(
-        fetch /* TODO: Accept additional params,  undefined / should be `string` /, { method: 'POST', body: '' } */,
-      ).receiving(new Response(undefined, { status: 200 })),
-      calls(fetch /* '', { method: 'POST', body: '' } */).receiving(404 /* should be `Response` */),
-    ],
-    undefined,
-    sampleIdentityCountReducer,
-    { count: '1' /* should be `number` */ },
-  );
+  expectSaga(watchForPostText)
+    .withReducer(sampleIdentityCountReducer)
+    .withMocks([select(stringLongerThanCountSelector, 5 /* should be `boolean` */)])
+    .toCall(fetch, new Response(undefined, { status: 200 }))
+    .toCall(fetch, 404)
+    .dispatch(wrongAction({ notText: 'asdf' }))
+    .toHaveFinalState({ count: '1' /* should be `number` */ })
+    .run();
 
-  return testSagaWithState(
-    watchForPostText,
-    postText({ text: 'asdf' }),
-    [],
-    undefined,
-    sampleIdentityCountReducer,
-    { count: '1' /* should be `number` */ }, // this is only reached, if the correct action is passed
-  );
+  return expectSaga(watchForPostText)
+    .withReducer(sampleIdentityCountReducer)
+    .dispatch(postText({ text: 'asdf' }))
+    .toHaveFinalState({ count: '1' /* should be `number` */ })
+    .run();
 });
