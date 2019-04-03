@@ -56,7 +56,7 @@ export function call<Args extends any[], Return, F extends (...args: Args) => Re
   };
 }
 
-export function select<State, Return, F extends (state: State) => Return>(
+export function select<State, Return, F extends (state: State, ...args: any[]) => Return>(
   func: F,
   value: ReturnType<F>,
 ): SelectMock<State, Return> {
