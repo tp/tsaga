@@ -44,7 +44,10 @@ export const getRunMocks = <State>(mocks: Mocks<State>) =>
 export const getMocks = <State, MockType extends Mock<State>>(mocks: Mocks<State>, type: Mock<State>['type']) =>
   mocks.filter((mock): mock is MockType => mock.type === type);
 
-export function call<Return>(func: () => Return, value: Return): CallMock<Return> {
+export function call<Args extends any[], Return, F extends (...args: Args) => Return>(
+  func: F,
+  value: ReturnType<F>,
+): CallMock<Return> {
   return {
     type: 'call',
     used: false,
