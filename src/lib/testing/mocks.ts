@@ -56,7 +56,10 @@ export function call<Args extends any[], Return, F extends (...args: Args) => Re
   };
 }
 
-export function select<State, Return>(func: (state: State) => Return, value: Return): SelectMock<State, Return> {
+export function select<State, Return, F extends (state: State) => Return>(
+  func: F,
+  value: ReturnType<F>,
+): SelectMock<State, Return> {
   return {
     type: 'select',
     used: false,
@@ -65,7 +68,10 @@ export function select<State, Return>(func: (state: State) => Return, value: Ret
   };
 }
 
-export function run<State, Return>(func: SagaFunc<State, any[], Return>, value: Return): RunMock<State, Return> {
+export function run<State, Return, F extends SagaFunc<State, any[], Return>>(
+  func: F,
+  value: ReturnType<F>,
+): RunMock<State, Return> {
   return {
     type: 'run',
     used: false,
@@ -74,7 +80,10 @@ export function run<State, Return>(func: SagaFunc<State, any[], Return>, value: 
   };
 }
 
-export function spawn<State, Return>(func: SagaFunc<State, any[], Return>, value: Return): SpawnMock<State, Return> {
+export function spawn<State, Return, F extends SagaFunc<State, any[], Return>>(
+  func: F,
+  value: ReturnType<F>,
+): SpawnMock<State, Return> {
   return {
     type: 'spawn',
     used: false,
