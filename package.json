@@ -1,6 +1,6 @@
 {
   "name": "tsaga",
-  "version": "2.1.0",
+  "version": "2.1.1-rc1",
   "description": "Typesafe and lightweight way to write functions with asynchronous side-effects that are easily testable.",
   "main": "compiled/lib/index.js",
   "repository": "https://github.com/tp/tsaga.git",
@@ -36,7 +36,7 @@
     "prepublishOnly": "rimraf compiled/ && tsc"
   },
   "dependencies": {
-    "typescript-fsa": "^3.0.0-beta-2"
+    "typescript-fsa": "^2.5"
   },
   "files": [
     "compiled/lib/**/*"
