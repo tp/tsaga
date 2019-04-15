@@ -64,7 +64,7 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
                 } else {
                   if (errorHandler) {
                     try {
-                      errorHandler(e);
+                      errorHandler(e, action);
                     } catch (e) {
                       console.error('Error when calling errorHandler', e);
                     }
