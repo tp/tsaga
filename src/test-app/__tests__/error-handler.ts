@@ -20,10 +20,11 @@ test('error handler test', async () => {
   setErrorHandler(handlerMock);
 
   const store = createStore(userReducer, applyMiddleware(middleware));
+  const action = userSelected({ id: 5 });
 
-  store.dispatch(userSelected({ id: 5 }));
+  store.dispatch(action);
 
   await sagaCompletion();
 
-  expect(handlerMock.mock.calls).toEqual([[new Error(`err in saga`)]]);
+  expect(handlerMock.mock.calls).toEqual([[new Error(`err in saga`), action]]);
 });
