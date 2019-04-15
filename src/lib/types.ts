@@ -66,7 +66,7 @@ export interface Saga<State, Payload> {
 
 export type AnySaga = Saga<any, any>;
 
-export type ErrorHandler = (error: unknown) => void;
+export type ErrorHandler = <Payload>(error: unknown, action: Action<Payload>) => void;
 
 export interface SagaMiddleware {
   middleware: Middleware;
