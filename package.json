@@ -3,6 +3,7 @@
   "version": "2.1.1-rc1",
   "description": "Typesafe and lightweight way to write functions with asynchronous side-effects that are easily testable.",
   "main": "compiled/lib/index.js",
+  "types": "compiled/lib/index.d.ts",
   "repository": "https://github.com/tp/tsaga.git",
   "author": "Timm Preetz <timm@preetz.us>",
   "license": "(MIT OR Apache-2.0)",
