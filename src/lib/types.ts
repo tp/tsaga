@@ -1,4 +1,4 @@
-import { Middleware } from 'redux';
+import { DeepPartial, Middleware } from 'redux';
 import { Action, ActionCreator } from 'typescript-fsa';
 
 export interface Task<T> {
@@ -68,6 +68,10 @@ export type AnySaga = Saga<any, any>;
 
 export type ErrorHandler = <Payload>(error: unknown, action: Action<Payload>) => void;
 
+export interface MiddlewareOptions<State> {
+  monitor?: SagaMonitor<State>,
+}
+
 export interface SagaMiddleware {
   middleware: Middleware;
   sagaCompletion: () => Promise<void>;
@@ -77,4 +81,83 @@ export interface SagaMiddleware {
 export interface AwaitingAction {
   actionCreator: ActionCreator<any>;
   resolve: (action: Action<any>) => void;
+}
+
+type SagaFinishedOptions =
+  | {
+      type: 'completed';
+    }
+  | {
+      // TODO: Maybe also add the action which was dispatched to cancel the saga?
+      type: 'cancelled';
+    }
+  | {
+      type: 'failed';
+      error: unknown;
+    };
+
+interface SelectEffectOptions<State, Args extends any[], Return> {
+  type: 'select';
+  selector: (state: State, ...args: Args) => Return;
+  args: Args;
+  value: Return;
+  state: State;
+}
+
+interface DispatchEffectOptions<State> {
+  type: 'dispatch';
+  action: Action<any>;
+  beforeState: State;
+  afterState: State;
+}
+
+interface TakeEffectOptions {
+  type: 'take';
+  actionCreator: ActionCreator<any>;
+  timeout?: number;
+  // TODO: Add support for adding taken action
+  // TODO: Add support for listening for timeout
+}
+
+interface RunEffectOptions<State, Args extends any[], Return> {
+  type: 'run';
+  func: (env: SagaEnvironment<State>, ...args: Args) => Return;
+  args: Args;
+  value: Return;
+}
+
+interface CallEffectOptions<Args extends any[], Return> {
+  type: 'call';
+  func: (...args: Args) => Return;
+  args: Args;
+  value: Return;
+}
+
+interface SpawnEffectOptions<State, Args extends any[], Return> {
+  type: 'spawn';
+  func: (env: SagaEnvironment<State>, ...args: Args) => Return;
+  args: Args;
+  value: Task<Return>;
+  // TODO: Add support for listening for cancellation
+}
+
+type OnEffectOptions<State> =
+  | DispatchEffectOptions<State>
+  | SelectEffectOptions<State, any[], any>
+  | TakeEffectOptions
+  | RunEffectOptions<State, any[], any>
+  | CallEffectOptions<any[], any>
+  | SpawnEffectOptions<State, any[], any>;
+
+export interface SagaMonitor<State> {
+  onSagaStarted(options: { action: Action<any>; id: number }): void;
+
+  onSagaFinished(
+    options: {
+      id: number;
+      action: Action<any>;
+    } & SagaFinishedOptions,
+  ): void;
+
+  onEffect(options: {sagaId: number} & OnEffectOptions<State>): void;
 }
