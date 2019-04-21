@@ -45,7 +45,7 @@ export function createSagaMiddleware<State>(sagas: AnySaga[], options: Middlewar
           }
 
           const sagaId = id++;
-          const env = createSagaEnvironment(api, sagaId, 0, waitForAction, cancellationToken);
+          const env = createSagaEnvironment(api, sagaId, 0, waitForAction, cancellationToken, options.monitor);
 
           if (options.monitor) {
             options.monitor.onSagaStarted({
