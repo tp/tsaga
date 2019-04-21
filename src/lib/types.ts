@@ -69,7 +69,7 @@ export type AnySaga = Saga<any, any>;
 export type ErrorHandler = <Payload>(error: unknown, action: Action<Payload>) => void;
 
 export interface MiddlewareOptions<State> {
-  monitor?: SagaMonitor<State>,
+  monitor?: SagaMonitor<State>;
 }
 
 export interface SagaMiddleware {
@@ -159,5 +159,5 @@ export interface SagaMonitor<State> {
     } & SagaFinishedOptions,
   ): void;
 
-  onEffect(options: {sagaId: number} & OnEffectOptions<State>): void;
+  onEffect(options: { sagaId: number } & OnEffectOptions<State>): void;
 }
