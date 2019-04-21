@@ -4,7 +4,7 @@ import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
 import { AnySaga, AwaitingAction, ErrorHandler, MiddlewareOptions, SagaMiddleware, WaitForAction } from './types';
 
-export function createSagaMiddleware<State>(sagas: AnySaga[], options: MiddlewareOptions<State>): SagaMiddleware {
+export function createSagaMiddleware<State>(sagas: AnySaga[], options: MiddlewareOptions<State> = {}): SagaMiddleware {
   const runningSagas = new Map<number, Promise<any>>();
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
   let id = 0;
@@ -45,11 +45,11 @@ export function createSagaMiddleware<State>(sagas: AnySaga[], options: Middlewar
           }
 
           const sagaId = id++;
-          const env = createSagaEnvironment(api, waitForAction, cancellationToken);
+          const env = createSagaEnvironment(api, sagaId, waitForAction, cancellationToken);
 
           if (options.monitor) {
             options.monitor.onSagaStarted({
-              id: sagaId,
+              sagaId,
               action,
             });
           }
@@ -62,7 +62,7 @@ export function createSagaMiddleware<State>(sagas: AnySaga[], options: Middlewar
                 if (options.monitor) {
                   options.monitor.onSagaFinished({
                     type: 'completed',
-                    id: sagaId,
+                    sagaId,
                     action,
                   });
                 }
@@ -78,7 +78,7 @@ export function createSagaMiddleware<State>(sagas: AnySaga[], options: Middlewar
                   if (options.monitor) {
                     options.monitor.onSagaFinished({
                       type: 'cancelled',
-                      id: sagaId,
+                      sagaId,
                       action,
                     });
                   }
@@ -88,7 +88,7 @@ export function createSagaMiddleware<State>(sagas: AnySaga[], options: Middlewar
                   if (options.monitor) {
                     options.monitor.onSagaFinished({
                       type: 'failed',
-                      id: sagaId,
+                      sagaId,
                       action,
                       error: e,
                     });

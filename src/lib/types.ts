@@ -150,11 +150,11 @@ type OnEffectOptions<State> =
   | SpawnEffectOptions<State, any[], any>;
 
 export interface SagaMonitor<State> {
-  onSagaStarted(options: { action: Action<any>; id: number }): void;
+  onSagaStarted(options: { action: Action<any>; sagaId: number }): void;
 
   onSagaFinished(
     options: {
-      id: number;
+      sagaId: number;
       action: Action<any>;
     } & SagaFinishedOptions,
   ): void;
