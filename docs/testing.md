@@ -1,13 +1,12 @@
 ## Testing
 
-`tsaga` comes with it's own testing utilities.
+`tsaga` comes with its testing utilities.
 
-The utilities are similar to `redux-saga-test-plan` and are modeled after how a saga would run in your application
-and are trying to be as close to the real world as possible.
+The utilities are similar to `redux-saga-test-plan` and modeled after how a saga would run in your application.
 
 ### Sagas
 
-The assertions are currently based on `expect` from the `jest` testing framework.
+The assertions use the `expect` function from the `jest` testing framework.
 
 ```typescript
 import { expectSaga, select, call, run, spawn } from 'tsaga';
@@ -64,25 +63,25 @@ import { select, call, run, spawn } from 'tsaga';
 ```
 
 The test will also fail if you have unused mocks.
-This is an expected behaviour so that the tests are always up to date with the source code and to keep the mocks as small as possible.
+This is an expected behavior so that the tests are always up to date with the source code and to keep the mocks as small as possible.
 
 #### Assertions
 
-The test will fail when there are assertions still left but the saga has already finished.
+The test will fail when there are assertions still left, but the saga has already finished.
 
-You also don't need to assert every single effect, you can easily skip an effect, but at the end of your test every assertion needs to be used in the order you provided.
+You also don't need to assert every single effect, you can easily skip an effect, but at the end of your test, every assertion needs to be used in the order you provided.
 
 Stack traces will show the location in the source code where the assertion failed.
-They will also show what was expected and what was received.
+They will also show what is expected and what was received.
 
 ##### Sub environments
 
 When you `run` or `spawn` a bound function, we will only forward the mocks to the child env.
-Assertions will not be used by the child env as this can make tests hard to understand and assertions should only concern the saga which is currently being tested.
+The child env will not use assertions as this can make tests hard to understand and assertions should only concern the saga which is currently tested.
 
 ##### Take assertions
 
-Whenever you have a `take` in your saga, you will need to assert on it to supply the correct action which will be returned to the saga.
+Whenever you have a `take` in your saga, you will need to assert it to supply the right action which is returned to the saga.
 If you don't, the test will fail as there is no way to continue the saga without it.
 
 We are working on a solution for also triggering a timeout for a `take`.
@@ -91,8 +90,8 @@ We are working on a solution for also triggering a timeout for a `take`.
 
 Assertions on the final state are only possible when you provide a reducer.
 
-Only the provided top level properties of the expected states are checked.
-This allows you to test certain sub states without providing your full state.
+Only the provided top-level properties of the expected states are checked.
+This allows you to test individual sub states without providing your full state.
 
 Example
 
@@ -105,7 +104,7 @@ interface State {
 
 import { expectSaga } from 'tsaga';
 
-// In our saga test we only want to check the basket state
+// In our saga test, we only want to check the basket state
 // We only need to provide on the first level our expected basket state
 // The user state will be skipped in the assertion
 // The basket state needs to match the expected basket state completely though
@@ -128,7 +127,7 @@ it("should fail on the final state because reduction doesn't exist on the actual
   );
 });
 
-it('should fail on the final state when property is missing', () => {
+it('should fail on the final state when a property is missing', () => {
   return (
     expectSaga(watchForFetchBasket)
       .withReducer(rootReducer)
