@@ -5,12 +5,17 @@ import TimeoutError from './TimeoutError';
 import { SagaEnvironment, SagaMonitor, WaitForAction } from './types';
 
 function sleep(timeout: number): Promise<'timeout'> {
-  return new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
+  return new Promise((resolve) => {
+    if (timeout > 0) {
+      setTimeout(() => resolve('timeout'), timeout);
+    }
+  });
 }
 
 export function createSagaEnvironment<State>(
   store: MiddlewareAPI<any, State>,
   sagaId: number,
+  childId: number,
   waitForAction: WaitForAction,
   cancellationToken?: CancellationToken,
   monitor?: SagaMonitor<State>,
@@ -29,6 +34,7 @@ export function createSagaEnvironment<State>(
         monitor.onEffect({
           type: 'dispatch',
           sagaId,
+          childId,
           action,
           beforeState,
           afterState: store.getState(),
@@ -45,10 +51,12 @@ export function createSagaEnvironment<State>(
       const value = selector(state, ...args);
 
       if (monitor) {
+        // @ts-ignore
         monitor.onEffect({
           type: 'select',
           sagaId,
           selector,
+          childId,
           args,
           value,
           state,
@@ -66,9 +74,11 @@ export function createSagaEnvironment<State>(
       const value = func(...args);
 
       if (monitor) {
+        // @ts-ignore
         monitor.onEffect({
           type: 'call',
           sagaId,
+          childId,
           func,
           args,
           value,
@@ -83,47 +93,82 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      const value = func(env, ...args);
+      const currentChildId = childId;
+      const newChildId = childId++;
 
       if (monitor) {
-        monitor.onEffect({
+        // @ts-ignore
+        monitor.onEffectStarted({
           type: 'run',
           sagaId,
+          childId: currentChildId,
+          ownChildId: newChildId,
           func,
           args,
+        });
+      }
+
+      const value = func(
+        createSagaEnvironment(store, sagaId, newChildId, waitForAction, cancellationToken, monitor),
+        ...args,
+      );
+
+      if (monitor) {
+        monitor.onEffectFinished({
+          type: 'run',
+          sagaId,
+          childId: currentChildId,
+          ownChildId: newChildId,
           value,
         });
       }
+
       return value;
     },
 
-    async take(actionCreator, timeout) {
+    async take(actionCreator, timeout = 0) {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
       if (monitor) {
-        monitor.onEffect({
+        // @ts-ignore
+        monitor.onEffectStarted({
           type: 'take',
           sagaId,
+          childId,
           actionCreator,
           timeout,
         });
       }
 
-      if (typeof timeout === 'number') {
-        const value = await Promise.race([waitForAction(actionCreator), sleep(timeout)]);
+      const value = await Promise.race([waitForAction(actionCreator), sleep(timeout)]);
 
-        if (value === 'timeout') {
-          throw new TimeoutError(actionCreator);
+      if (value === 'timeout') {
+        if (monitor) {
+          monitor.onEffectFinished({
+            type: 'take',
+            result: 'timeout',
+            sagaId,
+            childId,
+          });
         }
 
-        return value.payload;
+        throw new TimeoutError(actionCreator);
       }
 
-      const action = await waitForAction(actionCreator);
+      if (monitor) {
+        // @ts-ignore
+        monitor.onEffectFinished({
+          type: 'take',
+          result: 'result',
+          sagaId,
+          childId,
+          action: value,
+        });
+      }
 
-      return action.payload;
+      return value.payload;
     },
 
     spawn(func, ...args) {
@@ -131,22 +176,50 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
+      const currentChildId = childId;
+      const newChildId = childId++;
+
+      if (monitor) {
+        // @ts-ignore
+        monitor.onEffectStarted({
+          type: 'spawn',
+          sagaId,
+          childId: currentChildId,
+          ownChildId: newChildId,
+          func,
+          args,
+        });
+      }
+
       const childCancellationToken = new CancellationToken();
       // TODO: There is currently no way of distinguishing here between effects for this env and the child env
-      const childEnv = createSagaEnvironment(store, sagaId, waitForAction, childCancellationToken, monitor);
+      const childEnv = createSagaEnvironment(store, sagaId, newChildId, waitForAction, childCancellationToken, monitor);
 
       const task = {
-        cancel: () => childCancellationToken.cancel(),
+        cancel: () => {
+          if (monitor) {
+            monitor.onEffectFinished({
+              type: 'spawn',
+              sagaId,
+              childId: currentChildId,
+              ownChildId: newChildId,
+              result: 'cancelled',
+            });
+          }
+
+          childCancellationToken.cancel();
+        },
         result: func(childEnv, ...args),
       };
 
       if (monitor) {
-        monitor.onEffect({
+        monitor.onEffectFinished({
           type: 'spawn',
           sagaId,
-          args,
-          func,
-          value: task,
+          childId: currentChildId,
+          ownChildId: newChildId,
+          result: 'completed',
+          value: task.result,
         });
       }
 
