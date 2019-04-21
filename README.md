@@ -4,6 +4,10 @@ A typesafe and lightweight way to write functions with asynchronous side-effects
 
 [![Build Status](https://travis-ci.org/tp/tsaga.svg?branch=master)](https://travis-ci.org/tp/tsaga)
 
+## Testing
+
+For testing your sagas and bound functions see [here](/docs/testing.md)
+
 ## Examples
 
 ### Setting Up a Watcher
