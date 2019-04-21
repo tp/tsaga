@@ -1,4 +1,4 @@
-import { DeepPartial, Middleware } from 'redux';
+import { Middleware } from 'redux';
 import { Action, ActionCreator } from 'typescript-fsa';
 
 export interface Task<T> {
