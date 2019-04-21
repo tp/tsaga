@@ -45,7 +45,17 @@ export function createSagaMiddleware<State>(sagas: AnySaga[], options: Middlewar
           }
 
           const sagaId = id++;
-          const env = createSagaEnvironment(api, sagaId, 0, waitForAction, cancellationToken, options.monitor);
+          let childId = 0;
+
+          const getChildId = () => childId;
+          const incrementChildId = () => {
+            childId++;
+          };
+
+          const env = createSagaEnvironment(api, sagaId, {
+            get: getChildId,
+            increment: incrementChildId,
+          }, waitForAction, cancellationToken, options.monitor);
 
           if (options.monitor) {
             options.monitor.onSagaStarted({

@@ -15,12 +15,16 @@ function sleep(timeout: number): Promise<'timeout'> {
 export function createSagaEnvironment<State>(
   store: MiddlewareAPI<any, State>,
   sagaId: number,
-  childId: number,
+  childId: {
+    get(): number,
+    increment(): void,
+  },
   waitForAction: WaitForAction,
   cancellationToken?: CancellationToken,
   monitor?: SagaMonitor<State>,
 ): SagaEnvironment<State> {
-  const currentChildId = childId;
+  const currentChildId = childId.get();
+
   const env: SagaEnvironment<State> = {
     dispatch(action) {
       const beforeState = store.getState();
@@ -35,7 +39,7 @@ export function createSagaEnvironment<State>(
         monitor.onEffect({
           type: 'dispatch',
           sagaId,
-          childId,
+          childId: currentChildId,
           action,
           beforeState,
           afterState: store.getState(),
@@ -57,7 +61,7 @@ export function createSagaEnvironment<State>(
           type: 'select',
           sagaId,
           selector,
-          childId,
+          childId: currentChildId,
           args,
           value,
           state,
@@ -79,7 +83,7 @@ export function createSagaEnvironment<State>(
         monitor.onEffect({
           type: 'call',
           sagaId,
-          childId,
+          childId: currentChildId,
           func,
           args,
           value,
@@ -94,8 +98,8 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      childId++;
-      const newChildId = childId;
+      childId.increment();
+      const ownChildId = childId.get();
 
       if (monitor) {
         // @ts-ignore
@@ -103,14 +107,14 @@ export function createSagaEnvironment<State>(
           type: 'run',
           sagaId,
           childId: currentChildId,
-          ownChildId: newChildId,
+          ownChildId,
           func,
           args,
         });
       }
 
       const value = func(
-        createSagaEnvironment(store, sagaId, newChildId, waitForAction, cancellationToken, monitor),
+        createSagaEnvironment(store, sagaId, childId, waitForAction, cancellationToken, monitor),
         ...args,
       );
 
@@ -119,7 +123,7 @@ export function createSagaEnvironment<State>(
           type: 'run',
           sagaId,
           childId: currentChildId,
-          ownChildId: newChildId,
+          ownChildId,
           value,
         });
       }
@@ -137,7 +141,7 @@ export function createSagaEnvironment<State>(
         monitor.onEffectStarted({
           type: 'take',
           sagaId,
-          childId,
+          childId: currentChildId,
           actionCreator,
           timeout,
         });
@@ -151,7 +155,7 @@ export function createSagaEnvironment<State>(
             type: 'take',
             result: 'timeout',
             sagaId,
-            childId,
+            childId: currentChildId,
           });
         }
 
@@ -164,7 +168,7 @@ export function createSagaEnvironment<State>(
           type: 'take',
           result: 'result',
           sagaId,
-          childId,
+          childId: currentChildId,
           action: value,
         });
       }
@@ -177,8 +181,9 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      childId++;
-      const newChildId = childId;
+      childId.increment();
+
+      const ownChildId = childId.get();
 
       if (monitor) {
         // @ts-ignore
@@ -186,15 +191,14 @@ export function createSagaEnvironment<State>(
           type: 'spawn',
           sagaId,
           childId: currentChildId,
-          ownChildId: newChildId,
+          ownChildId,
           func,
           args,
         });
       }
 
       const childCancellationToken = new CancellationToken();
-      // TODO: There is currently no way of distinguishing here between effects for this env and the child env
-      const childEnv = createSagaEnvironment(store, sagaId, newChildId, waitForAction, childCancellationToken, monitor);
+      const childEnv = createSagaEnvironment(store, sagaId, childId, waitForAction, childCancellationToken, monitor);
 
       const task = {
         cancel: () => {
@@ -203,7 +207,7 @@ export function createSagaEnvironment<State>(
               type: 'spawn',
               sagaId,
               childId: currentChildId,
-              ownChildId: newChildId,
+              ownChildId,
               result: 'cancelled',
             });
           }
@@ -218,7 +222,7 @@ export function createSagaEnvironment<State>(
           type: 'spawn',
           sagaId,
           childId: currentChildId,
-          ownChildId: newChildId,
+          ownChildId,
           result: 'completed',
           value: task.result,
         });
