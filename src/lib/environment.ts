@@ -20,6 +20,7 @@ export function createSagaEnvironment<State>(
   cancellationToken?: CancellationToken,
   monitor?: SagaMonitor<State>,
 ): SagaEnvironment<State> {
+  const currentChildId = childId;
   const env: SagaEnvironment<State> = {
     dispatch(action) {
       const beforeState = store.getState();
@@ -93,8 +94,8 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      const currentChildId = childId;
-      const newChildId = childId++;
+      childId++;
+      const newChildId = childId;
 
       if (monitor) {
         // @ts-ignore
@@ -176,8 +177,8 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      const currentChildId = childId;
-      const newChildId = childId++;
+      childId++;
+      const newChildId = childId;
 
       if (monitor) {
         // @ts-ignore
