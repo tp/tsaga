@@ -10,45 +10,47 @@ and are trying to be as close to the real world as possible.
 The assertions are currently based on `expect` from the `jest` testing framework.
 
 ```typescript
-import {expectSaga, select, call, run, spawn} from 'tsaga';
+import { expectSaga, select, call, run, spawn } from 'tsaga';
 
 it('should run a saga', () => {
-  return expectSaga(watchForFetchUser)
-    // Setup a store with a reducer and an optional initial state
-    // This is optional
-    .withReducer(rootReducer, undefined)
-    // Setup some mocks which should be used instead of the real functions
-    // The mock helper functions provide useful type assertions, 
-    // so that you return a value which is valid
-    // This is optional
-    .withMocks([
-      // A select mock, the second argument is the return value when this mock is used
-      select(getUserById, { id: 5 }),
-      // A call mock, the second argument is the return value when this mock is used
-      call(fetchUserApi, { id: 5 }),
-      // A spawn mock, the second argument is the return value when this mock is used
-      spawn(trackUser),
-      // A run mock, the second argument is the return value when this mock is used
-      run(loginUser),
-    ])
-    // These are the expectations for the saga
-    // Expect the saga to call a function
-    // The arguments afterwards are what will be passed to the function
-    .toCall(fetchUserApi, 5, { all: true })
-    // Expect the saga to spawn a child bound function
-    .toSpawn(trackUser)
-    // Expect the saga to run a function
-    .toRun(loginUser, { id: 5 })
-    // Expect the saga to dispatch an action
-    .toDispatch(storeUser({ id: 5 }))
-    // Start the saga with the action
-    .dispatch(fetchUser(5))
-    // Do some assertions on the state
-    .toHaveFinalState()
-    // Start the whole saga and do the assertions
-    // You can provide a timeout as the first argument here for the saga to fail if it takes too long
-    // The default timeout is 10 seconds
-    .run()
+  return (
+    expectSaga(watchForFetchUser)
+      // Setup a store with a reducer and an optional initial state
+      // This is optional
+      .withReducer(rootReducer, undefined)
+      // Setup some mocks which should be used instead of the real functions
+      // The mock helper functions provide useful type assertions,
+      // so that you return a value which is valid
+      // This is optional
+      .withMocks([
+        // A select mock, the second argument is the return value when this mock is used
+        select(getUserById, { id: 5 }),
+        // A call mock, the second argument is the return value when this mock is used
+        call(fetchUserApi, { id: 5 }),
+        // A spawn mock, the second argument is the return value when this mock is used
+        spawn(trackUser),
+        // A run mock, the second argument is the return value when this mock is used
+        run(loginUser),
+      ])
+      // These are the expectations for the saga
+      // Expect the saga to call a function
+      // The arguments afterwards are what will be passed to the function
+      .toCall(fetchUserApi, 5, { all: true })
+      // Expect the saga to spawn a child bound function
+      .toSpawn(trackUser)
+      // Expect the saga to run a function
+      .toRun(loginUser, { id: 5 })
+      // Expect the saga to dispatch an action
+      .toDispatch(storeUser({ id: 5 }))
+      // Start the saga with the action
+      .dispatch(fetchUser(5))
+      // Do some assertions on the state
+      .toHaveFinalState()
+      // Start the whole saga and do the assertions
+      // You can provide a timeout as the first argument here for the saga to fail if it takes too long
+      // The default timeout is 10 seconds
+      .run()
+  );
 });
 ```
 
@@ -58,10 +60,10 @@ There are `select`, `call`, `run` and `spawn` mock helpers to easily setup mocks
 These should only be used inside the tests and not in the actual saga code.
 
 ```typescript
-import {select, call, run, spawn} from 'tsaga';
+import { select, call, run, spawn } from 'tsaga';
 ```
 
-The test will also fail if you have unused mocks. 
+The test will also fail if you have unused mocks.
 This is an expected behaviour so that the tests are always up to date with the source code and to keep the mocks as small as possible.
 
 #### Assertions
@@ -93,14 +95,15 @@ Only the provided top level properties of the expected states are checked.
 This allows you to test certain sub states without providing your full state.
 
 Example
+
 ```typescript
 // If our state looks like this:
 interface State {
-  user: { id: number },
-  basket: { total: number },
+  user: { id: number };
+  basket: { total: number };
 }
 
-import {expectSaga} from 'tsaga';
+import { expectSaga } from 'tsaga';
 
 // In our saga test we only want to check the basket state
 // We only need to provide on the first level our expected basket state
@@ -114,21 +117,25 @@ it('should assert on the final state', () => {
     .run();
 });
 
-it('should fail on the final state because reduction doesn\'t exist on the actual state', () => {
-  return expectSaga(watchForFetchBasket)
-    .withReducer(rootReducer)
-    .dispatch(fetchBasket())
-    // This test would fail as there is an additional property on the expected state which isn't in the actual state
-    .toHaveFinalState({ basket: { total: 0, reduction: 0 } })
-    .run();
+it("should fail on the final state because reduction doesn't exist on the actual state", () => {
+  return (
+    expectSaga(watchForFetchBasket)
+      .withReducer(rootReducer)
+      .dispatch(fetchBasket())
+      // This test would fail as there is an additional property on the expected state which isn't in the actual state
+      .toHaveFinalState({ basket: { total: 0, reduction: 0 } })
+      .run()
+  );
 });
 
 it('should fail on the final state when property is missing', () => {
-  return expectSaga(watchForFetchBasket)
-    .withReducer(rootReducer)
-    .dispatch(fetchBasket())
-    // This test would fail because we are missing the total property
-    .toHaveFinalState({ basket: {} })
-    .run();
+  return (
+    expectSaga(watchForFetchBasket)
+      .withReducer(rootReducer)
+      .dispatch(fetchBasket())
+      // This test would fail because we are missing the total property
+      .toHaveFinalState({ basket: {} })
+      .run()
+  );
 });
 ```
