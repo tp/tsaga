@@ -32,15 +32,6 @@ export type Mock<State> = CallMock<any> | SelectMock<State, any> | RunMock<State
 
 export type Mocks<State> = Array<Mock<State>>;
 
-export const getSelectMocks = <State>(mocks: Mocks<State>) =>
-  mocks.filter((mock): mock is SelectMock<State, any> => mock.type === 'select');
-
-export const getCallMocks = <State>(mocks: Mocks<State>) =>
-  mocks.filter((mock): mock is CallMock<any> => mock.type === 'call');
-
-export const getRunMocks = <State>(mocks: Mocks<State>) =>
-  mocks.filter((mock): mock is RunMock<State, any> => mock.type === 'run');
-
 export const getMocks = <State, MockType extends Mock<State>>(mocks: Mocks<State>, type: Mock<State>['type']) =>
   mocks.filter((mock): mock is MockType => mock.type === type);
 

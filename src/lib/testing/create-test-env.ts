@@ -1,7 +1,6 @@
 import { MiddlewareAPI } from 'redux';
 import { SagaEnvironment } from '../types';
-import { MissingTakeError } from './errors';
-import { Asserts } from './index';
+import { Asserts } from './assertions';
 import { CallMock, getMocks, Mocks, RunMock, SelectMock, SpawnMock } from './mocks';
 
 export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asserts<State>) {
@@ -58,7 +57,7 @@ export function createTestEnvironment<State>(mocks: Mocks<State>, asserts: Asser
         }
 
         try {
-          throw new MissingTakeError(`Missing take assertion for action ${actionCreator.type}`);
+          throw new Error(`Missing take assertion for action ${actionCreator.type}`);
         } catch (error) {
           Error.captureStackTrace(error, env.take);
           throw error;
