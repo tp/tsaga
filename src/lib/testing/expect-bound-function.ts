@@ -42,6 +42,8 @@ interface RunStage {
   run(timeout?: number): Promise<void>;
 }
 
+const NO_RETURN_VALUE = Symbol('NO_RETURN_VALUE');
+
 class BoundFunctionTest<State, Args extends any[], Return> {
   private readonly func: SagaFunc<State, Args, Return>;
 
@@ -51,7 +53,7 @@ class BoundFunctionTest<State, Args extends any[], Return> {
 
   private args: Args | null = null;
 
-  private returnValue: Return | undefined;
+  private returnValue: Return | symbol = NO_RETURN_VALUE;
 
   private store: Store<State> = createStore((state = ({} as unknown) as State) => state, undefined);
 
@@ -162,6 +164,10 @@ class BoundFunctionTest<State, Args extends any[], Return> {
 
     if (val === 'timeout') {
       throw new Error(`Saga didn't finish within the timeout of ${timeout / 1000} seconds`);
+    }
+
+    if (this.returnValue !== NO_RETURN_VALUE) {
+      expect(val).toEqual(this.returnValue);
     }
 
     if (this.asserts.length > 0) {
