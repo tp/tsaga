@@ -12,4 +12,4 @@ test('Test that increase counter effect should work ', () => {
     .toReturn(1)
     .toHaveFinalState({ count: 1, selectedUser: null, usersById: {} })
     .run();
-}, 500 /* something below the 3s sleep */);
+});
