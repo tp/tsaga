@@ -3,7 +3,7 @@ import { setCount } from '../actions';
 import { userReducer } from '../reducers';
 import { increaseCounter } from '../sagas/user-sagas';
 
-test('Test helper with mocked sleep call', () => {
+test('Test that increase counter effect should work ', () => {
   return expectBoundFunction(increaseCounter)
     .withReducer(userReducer)
     .withMocks([])
