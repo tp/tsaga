@@ -40,6 +40,8 @@ export const increaseCounter = ($: AppEnv) => {
   // console.error(`about to set new count:`, count + 1);
 
   $.dispatch(setCount({ count: count + 1 }));
+
+  return count + 1;
 };
 
 export const watchForUserSelectorToCountIfNotChangedWithing3s = forLatest(userSelected, async ($, payload) => {
