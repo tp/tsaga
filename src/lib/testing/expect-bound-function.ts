@@ -10,11 +10,15 @@ interface WithReducerStage<State, Args extends any[], Return> {
   withReducer(reducer: Reducer<State, any>, initialState?: DeepPartial<State>): WithMocksStage<State, Args, Return>;
 }
 
-interface WithMocksStage<State, Args extends any[], Return> extends AssertionStage<State, Args, Return> {
-  withMocks(mocks: Mocks<State>): AssertionStage<State, Args, Return>;
+interface WithMocksStage<State, Args extends any[], Return> extends CallStage<State, Args, Return> {
+  withMocks(mocks: Mocks<State>): CallStage<State, Args, Return>;
 }
 
-interface AssertionStage<State, Args extends any[], Return> extends CallStage<State, Args, Return> {
+interface CallStage<State, Args extends any[], Return> {
+  whenCalledWith(...args: Args): AssertionStage<State, Args, Return>;
+}
+
+interface AssertionStage<State, Args extends any[], Return> extends FinalStateStage<State> {
   toCall(fn: (...args: any[]) => any, ...args: any): AssertionStage<State, Args, Return>;
 
   toRun(effect: SagaFunc<State, any[], any>, ...args: Args): AssertionStage<State, Args, Return>;
@@ -24,13 +28,7 @@ interface AssertionStage<State, Args extends any[], Return> extends CallStage<St
   toDispatch<DispatchPayload>(action: Action<DispatchPayload>): AssertionStage<State, Args, Return>;
 
   toTake<TakePayload>(action: Action<TakePayload>): AssertionStage<State, Args, Return>;
-}
 
-interface CallStage<State, Args extends any[], Return> {
-  call(...args: Args): ReturnStage<State, Args, Return>;
-}
-
-interface ReturnStage<State, Args extends any[], Return> extends FinalStateStage<State> {
   toReturn(value: Return): FinalStateStage<State>;
 }
 
@@ -69,8 +67,14 @@ class BoundFunctionTest<State, Args extends any[], Return> {
     return this;
   }
 
-  public withMocks(mocks: Mocks<State>): AssertionStage<State, Args, Return> {
+  public withMocks(mocks: Mocks<State>): CallStage<State, Args, Return> {
     this.mocks = mocks;
+
+    return this;
+  }
+
+  public whenCalledWith(...args: Args): AssertionStage<State, Args, Return> {
+    this.args = args;
 
     return this;
   }
@@ -131,12 +135,6 @@ class BoundFunctionTest<State, Args extends any[], Return> {
     return this;
   }
 
-  public call(...args: Args): ReturnStage<State, Args, Return> {
-    this.args = args;
-
-    return this;
-  }
-
   public toReturn(value: Return): FinalStateStage<State> {
     this.returnValue = value;
 
@@ -171,7 +169,7 @@ class BoundFunctionTest<State, Args extends any[], Return> {
     }
 
     if (this.asserts.length > 0) {
-      throw new Error(`Saga didn't full fil ${this.asserts.length} assert${this.asserts.length === 1 ? '' : 's'}`);
+      throw new Error(`Saga didn't fulfill ${this.asserts.length} assert${this.asserts.length === 1 ? '' : 's'}`);
     }
 
     if (this.finalState) {

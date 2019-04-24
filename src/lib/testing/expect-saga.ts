@@ -166,7 +166,7 @@ class SagaTest<State, Payload> {
     }
 
     if (this.asserts.length > 0) {
-      throw new Error(`Saga didn't full fil ${this.asserts.length} assert${this.asserts.length === 1 ? '' : 's'}`);
+      throw new Error(`Saga didn't fulfill ${this.asserts.length} assert${this.asserts.length === 1 ? '' : 's'}`);
     }
 
     if (this.finalState) {

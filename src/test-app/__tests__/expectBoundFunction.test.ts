@@ -6,8 +6,9 @@ import { increaseCounter } from '../sagas/user-sagas';
 test('Test helper with mocked sleep call', () => {
   return expectBoundFunction(increaseCounter)
     .withReducer(userReducer)
+    .withMocks([])
+    .whenCalledWith()
     .toDispatch(setCount({ count: 1 }))
-    .call()
     .toReturn(1)
     .toHaveFinalState({ count: 1, selectedUser: null, usersById: {} })
     .run();
