@@ -2,24 +2,49 @@ import { MiddlewareAPI } from 'redux';
 import { CancellationToken } from './CancellationToken';
 import { SagaCancelledError } from './SagaCancelledError';
 import TimeoutError from './TimeoutError';
-import { SagaEnvironment, WaitForAction } from './types';
+import { SagaEnvironment, SagaMonitor, WaitForAction } from './types';
 
 function sleep(timeout: number): Promise<'timeout'> {
-  return new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
+  return new Promise((resolve) => {
+    if (timeout > 0) {
+      setTimeout(() => resolve('timeout'), timeout);
+    }
+  });
 }
 
 export function createSagaEnvironment<State>(
   store: MiddlewareAPI<any, State>,
+  sagaId: number,
+  childId: {
+    get(): number,
+    increment(): void,
+  },
   waitForAction: WaitForAction,
   cancellationToken?: CancellationToken,
+  monitor?: SagaMonitor<State>,
 ): SagaEnvironment<State> {
+  const currentChildId = childId.get();
+
   const env: SagaEnvironment<State> = {
     dispatch(action) {
+      const beforeState = store.getState();
+
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
       store.dispatch(action);
+
+      if (monitor) {
+        monitor.onEffect({
+          type: 'dispatch',
+          sagaId,
+          childId: currentChildId,
+          action,
+          beforeState,
+          afterState: store.getState(),
+        });
+      }
     },
 
     select(selector, ...args) {
@@ -27,7 +52,23 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      return selector(store.getState(), ...args);
+      const state = store.getState();
+      const value = selector(state, ...args);
+
+      if (monitor) {
+        // @ts-ignore
+        monitor.onEffect({
+          type: 'select',
+          sagaId,
+          selector,
+          childId: currentChildId,
+          args,
+          value,
+          state,
+        });
+      }
+
+      return value;
     },
 
     call(func, ...args) {
@@ -35,7 +76,21 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      return func(...args);
+      const value = func(...args);
+
+      if (monitor) {
+        // @ts-ignore
+        monitor.onEffect({
+          type: 'call',
+          sagaId,
+          childId: currentChildId,
+          func,
+          args,
+          value,
+        });
+      }
+
+      return value;
     },
 
     run(func, ...args) {
@@ -43,27 +98,82 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      return func(env, ...args);
+      childId.increment();
+      const ownChildId = childId.get();
+
+      if (monitor) {
+        // @ts-ignore
+        monitor.onEffectStarted({
+          type: 'run',
+          sagaId,
+          childId: currentChildId,
+          ownChildId,
+          func,
+          args,
+        });
+      }
+
+      const value = func(
+        createSagaEnvironment(store, sagaId, childId, waitForAction, cancellationToken, monitor),
+        ...args,
+      );
+
+      if (monitor) {
+        monitor.onEffectFinished({
+          type: 'run',
+          sagaId,
+          childId: currentChildId,
+          ownChildId,
+          value,
+        });
+      }
+
+      return value;
     },
 
-    async take(actionCreator, timeout) {
+    async take(actionCreator, timeout = 0) {
       if (cancellationToken && cancellationToken.canceled) {
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      if (typeof timeout === 'number') {
-        const value = await Promise.race([waitForAction(actionCreator), sleep(timeout)]);
-
-        if (value === 'timeout') {
-          throw new TimeoutError(actionCreator);
-        }
-
-        return value.payload;
+      if (monitor) {
+        // @ts-ignore
+        monitor.onEffectStarted({
+          type: 'take',
+          sagaId,
+          childId: currentChildId,
+          actionCreator,
+          timeout,
+        });
       }
 
-      const action = await waitForAction(actionCreator);
+      const value = await Promise.race([waitForAction(actionCreator), sleep(timeout)]);
 
-      return action.payload;
+      if (value === 'timeout') {
+        if (monitor) {
+          monitor.onEffectFinished({
+            type: 'take',
+            result: 'timeout',
+            sagaId,
+            childId: currentChildId,
+          });
+        }
+
+        throw new TimeoutError(actionCreator);
+      }
+
+      if (monitor) {
+        // @ts-ignore
+        monitor.onEffectFinished({
+          type: 'take',
+          result: 'result',
+          sagaId,
+          childId: currentChildId,
+          action: value,
+        });
+      }
+
+      return value.payload;
     },
 
     spawn(func, ...args) {
@@ -71,13 +181,54 @@ export function createSagaEnvironment<State>(
         throw new SagaCancelledError(`Saga has been cancelled`);
       }
 
-      const childCancellationToken = new CancellationToken();
-      const childEnv = createSagaEnvironment(store, waitForAction, childCancellationToken);
+      childId.increment();
 
-      return {
-        cancel: () => childCancellationToken.cancel(),
+      const ownChildId = childId.get();
+
+      if (monitor) {
+        // @ts-ignore
+        monitor.onEffectStarted({
+          type: 'spawn',
+          sagaId,
+          childId: currentChildId,
+          ownChildId,
+          func,
+          args,
+        });
+      }
+
+      const childCancellationToken = new CancellationToken();
+      const childEnv = createSagaEnvironment(store, sagaId, childId, waitForAction, childCancellationToken, monitor);
+
+      const task = {
+        cancel: () => {
+          if (monitor) {
+            monitor.onEffectFinished({
+              type: 'spawn',
+              sagaId,
+              childId: currentChildId,
+              ownChildId,
+              result: 'cancelled',
+            });
+          }
+
+          childCancellationToken.cancel();
+        },
         result: func(childEnv, ...args),
       };
+
+      if (monitor) {
+        monitor.onEffectFinished({
+          type: 'spawn',
+          sagaId,
+          childId: currentChildId,
+          ownChildId,
+          result: 'completed',
+          value: task.result,
+        });
+      }
+
+      return task;
     },
   };
 

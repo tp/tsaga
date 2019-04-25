@@ -2,9 +2,9 @@ import { isType } from 'typescript-fsa';
 import { CancellationToken } from './CancellationToken';
 import { createSagaEnvironment } from './environment';
 import { SagaCancelledError } from './SagaCancelledError';
-import { AnySaga, AwaitingAction, ErrorHandler, SagaMiddleware, WaitForAction } from './types';
+import { AnySaga, AwaitingAction, ErrorHandler, MiddlewareOptions, SagaMiddleware, WaitForAction } from './types';
 
-export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
+export function createSagaMiddleware<State>(sagas: AnySaga[], options: MiddlewareOptions<State> = {}): SagaMiddleware {
   const runningSagas = new Map<number, Promise<any>>();
   const cancellationTokens = new Map<AnySaga, CancellationToken>();
   let id = 0;
@@ -45,13 +45,38 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
           }
 
           const sagaId = id++;
-          const env = createSagaEnvironment(api, waitForAction, cancellationToken);
+          let childId = 0;
+
+          const getChildId = () => childId;
+          const incrementChildId = () => {
+            childId++;
+          };
+
+          const env = createSagaEnvironment(api, sagaId, {
+            get: getChildId,
+            increment: incrementChildId,
+          }, waitForAction, cancellationToken, options.monitor);
+
+          if (options.monitor) {
+            options.monitor.onSagaStarted({
+              sagaId,
+              action,
+            });
+          }
 
           runningSagas.set(
             sagaId,
             saga
               .handler(env, action.payload)
               .then(() => {
+                if (options.monitor) {
+                  options.monitor.onSagaFinished({
+                    type: 'completed',
+                    sagaId,
+                    action,
+                  });
+                }
+
                 runningSagas.delete(sagaId);
 
                 return 'completed';
@@ -60,8 +85,25 @@ export function createSagaMiddleware(sagas: AnySaga[]): SagaMiddleware {
                 runningSagas.delete(sagaId);
 
                 if (e instanceof SagaCancelledError) {
+                  if (options.monitor) {
+                    options.monitor.onSagaFinished({
+                      type: 'cancelled',
+                      sagaId,
+                      action,
+                    });
+                  }
+
                   return 'cancelled';
                 } else {
+                  if (options.monitor) {
+                    options.monitor.onSagaFinished({
+                      type: 'failed',
+                      sagaId,
+                      action,
+                      error: e,
+                    });
+                  }
+
                   if (errorHandler) {
                     try {
                       errorHandler(e, action);

@@ -68,6 +68,10 @@ export type AnySaga = Saga<any, any>;
 
 export type ErrorHandler = <Payload>(error: unknown, action: Action<Payload>) => void;
 
+export interface MiddlewareOptions<State> {
+  monitor?: SagaMonitor<State>;
+}
+
 export interface SagaMiddleware {
   middleware: Middleware;
   sagaCompletion: () => Promise<void>;
@@ -77,4 +81,108 @@ export interface SagaMiddleware {
 export interface AwaitingAction {
   actionCreator: ActionCreator<any>;
   resolve: (action: Action<any>) => void;
+}
+
+type SagaFinishedOptions =
+  | {
+      type: 'completed';
+    }
+  | {
+      // TODO: Maybe also add the action which was dispatched to cancel the saga?
+      type: 'cancelled';
+    }
+  | {
+      type: 'failed';
+      error: unknown;
+    };
+
+export interface SagaMonitor<State> {
+  onSagaStarted(options: { action: Action<unknown>; sagaId: number }): void;
+
+  onSagaFinished(
+    options: {
+      sagaId: number;
+      action: Action<unknown>;
+    } & SagaFinishedOptions,
+  ): void;
+
+  // For simple effects
+  onEffect(
+    options:
+      | {
+          sagaId: number;
+          childId: number;
+          type: 'select';
+          selector: (state: State, ...args: unknown[]) => unknown;
+          args: unknown[];
+          value: unknown;
+          state: State;
+        }
+      | {
+          sagaId: number;
+          childId: number;
+          type: 'dispatch';
+          action: Action<unknown>;
+          beforeState: State;
+          afterState: State;
+        }
+      | {
+          sagaId: number;
+          childId: number;
+          type: 'call';
+          func: (...args: unknown[]) => unknown;
+          args: unknown[];
+          value: unknown;
+        },
+  ): void;
+
+  // For complex effects
+  onEffectStarted(
+    options:
+      | {
+          sagaId: number;
+          childId: number;
+          type: 'take';
+          actionCreator: ActionCreator<unknown>;
+          timeout?: number;
+        }
+      | {
+          sagaId: number;
+          childId: number;
+          ownChildId: number;
+          type: 'run';
+          func: (env: SagaEnvironment<State>, ...args: unknown[]) => unknown;
+          args: unknown[];
+        }
+      | {
+          sagaId: number;
+          childId: number;
+          ownChildId: number;
+          type: 'spawn';
+          func: (env: SagaEnvironment<State>, ...args: unknown[]) => unknown;
+          args: unknown[];
+        },
+  ): void;
+
+  onEffectFinished(
+    options:
+      | ({
+          sagaId: number;
+          childId: number;
+          type: 'take';
+        } & ({ result: 'action'; action: Action<unknown> } | { result: 'timeout' }))
+      | {
+          sagaId: number;
+          childId: number;
+          ownChildId: number;
+          type: 'run';
+          value: unknown;
+        }
+      | ({
+          sagaId: number;
+          childId: number;
+          ownChildId: number;
+          type: 'spawn';
+        } & ({ result: 'cancelled' } | { result: 'completed'; value: unknown })),
+  ): void;
 }
