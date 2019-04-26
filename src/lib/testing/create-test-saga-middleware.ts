@@ -1,7 +1,7 @@
 import { isType } from 'typescript-fsa';
 import { AnySaga, SagaMiddleware } from '../types';
+import { Asserts } from './assertions';
 import { createTestEnvironment } from './create-test-env';
-import { Asserts } from './index';
 import { Mocks } from './mocks';
 
 export function createTestSagaMiddleware<State>(

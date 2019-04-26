@@ -4,9 +4,8 @@ import { SagaCancelledError } from './SagaCancelledError';
 import TimeoutError from './TimeoutError';
 import { SagaEnvironment, WaitForAction } from './types';
 
-function sleep(timeout: number): Promise<'timeout'> {
-  return new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
-}
+export const sleep = (timeout: number): Promise<'timeout'> =>
+  new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
 
 export function createSagaEnvironment<State>(
   store: MiddlewareAPI<any, State>,
