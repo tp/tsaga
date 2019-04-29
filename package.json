@@ -37,6 +37,7 @@
     "prepublishOnly": "rimraf compiled/ && tsc"
   },
   "dependencies": {
+    "expect": "^24.7.1",
     "typescript-fsa": "^2.5"
   },
   "files": [
