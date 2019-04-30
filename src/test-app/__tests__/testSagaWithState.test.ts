@@ -1,6 +1,6 @@
 // tslint:disable-next-line:no-implicit-dependencies (Just used in tests)
 import * as nock from 'nock';
-import { calls, dispatches, selects, testSagaWithState } from '../../lib';
+import { calls, dispatches, selects, testSagaWithState } from '../../lib/testing';
 import { setCount, userSelected } from '../actions';
 import { sleep } from '../app-library';
 import { userReducer } from '../reducers';

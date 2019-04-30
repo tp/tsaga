@@ -1,9 +1,9 @@
 // tslint:disable
 import fetch, { Response } from 'node-fetch';
-import { createTypedForEvery, expectSaga } from '../../lib';
+import { createTypedForEvery } from '../../lib';
 import actionCreatorFactory from 'typescript-fsa';
 import { createSelector } from 'reselect';
-import { select } from '../../lib/testing/mocks';
+import { select, expectSaga } from '../../lib/testing';
 
 export type CountReducerState = {
   count: number;
