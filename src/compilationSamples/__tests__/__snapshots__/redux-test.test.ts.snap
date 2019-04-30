@@ -5,7 +5,7 @@ Array [
   Object {
     "character": 27,
     "fileName": "redux-test.ts",
-    "line": 41,
+    "line": 42,
     "message": "Argument of type '(state: { text: string; }) => string' is not assignable to parameter of type '(state: CountReducerState) => string'.
   Types of parameters 'state' and 'state' are incompatible.
     Property 'text' is missing in type 'CountReducerState' but required in type '{ text: string; }'.",
@@ -13,26 +13,26 @@ Array [
   Object {
     "character": 4,
     "fileName": "redux-test.ts",
-    "line": 55,
+    "line": 56,
     "message": "Argument of type 'Action<{ notText: string; }>' is not assignable to parameter of type 'Action<{ text: string; }>'.
   Property 'text' is missing in type '{ notText: string; }' but required in type '{ text: string; }'.",
   },
   Object {
     "character": 76,
     "fileName": "redux-test.ts",
-    "line": 57,
+    "line": 58,
     "message": "Argument of type '5' is not assignable to parameter of type 'boolean'.",
   },
   Object {
     "character": 68,
     "fileName": "redux-test.ts",
-    "line": 61,
+    "line": 62,
     "message": "Argument of type '404' is not assignable to parameter of type 'Response'.",
   },
   Object {
     "character": 6,
     "fileName": "redux-test.ts",
-    "line": 74,
+    "line": 75,
     "message": "Type 'string' is not assignable to type 'number'.",
   },
 ]

@@ -1,6 +1,7 @@
 // tslint:disable
 import fetch, { Response } from 'node-fetch';
-import { testSagaWithState, createTypedForEvery, calls, selects } from '../../lib';
+import { createTypedForEvery } from '../../lib';
+import { testSagaWithState, calls, selects } from '../../lib/testing';
 import actionCreatorFactory from 'typescript-fsa';
 import { createSelector } from 'reselect';
 

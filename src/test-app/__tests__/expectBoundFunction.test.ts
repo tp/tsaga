@@ -1,4 +1,4 @@
-import { expectBoundFunction } from '../../lib';
+import { expectBoundFunction } from '../../lib/testing';
 import { setCount } from '../actions';
 import { userReducer } from '../reducers';
 import { increaseCounter } from '../sagas/user-sagas';
