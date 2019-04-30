@@ -18,32 +18,91 @@ interface WithReducerStage<State, Args extends any[], Return> {
 }
 
 interface WithMocksStage<State, Args extends any[], Return> {
+  /**
+   * Supply some mocks which will be used instead of the real functions.
+   *
+   * @param mocks The array of mocks to be used by the bound function.
+   */
+
   andMocks(mocks: Mocks<State>): CallStage<State, Args, Return>;
 }
 
 interface CallStage<State, Args extends any[], Return> {
+  /**
+   * Supply the arguments which will be used to call the bound function.
+   *
+   * @param args The arguments which will be forwarded to the bound function.
+   */
   calledWith(...args: Args): AssertionStage<State, Args, Return>;
 }
 
-interface AssertionStage<State, Args extends any[], Return> {
+interface AssertionStage<State, Args extends any[], Return> extends FinalStateStage<State> {
+  /**
+   * Expect the bound function to call another function.
+   * The arguments have to match completely.
+   *
+   * @param fn
+   * @param args The arguments the function should be called with.
+   */
   toCall(fn: (...args: any[]) => any, ...args: any): AssertionOrFinalStage<State, Args, Return>;
 
+  /**
+   * Expect the bound function to run another bound function.
+   * The arguments have to match completely.
+   *
+   * @param effect
+   * @param args The arguments the effect should be called with.
+   */
   toRun(effect: SagaFunc<State, any[], any>, ...args: Args): AssertionOrFinalStage<State, Args, Return>;
 
+  /**
+   * Expect the bound function to spawn another bound function.
+   * The arguments have to match completely.
+   *
+   * @param effect
+   * @param args The arguments the effect should be called with.
+   */
   toSpawn(effect: SagaFunc<State, any[], any>, ...args: Args): AssertionOrFinalStage<State, Args, Return>;
 
+  /**
+   * Expect an action to be dispatched.
+   *
+   * @param action The action which should be dispatched.
+   */
   toDispatch<DispatchPayload>(action: Action<DispatchPayload>): AssertionOrFinalStage<State, Args, Return>;
 
+  /**
+   * Expect the bound effect to wait for an action.
+   *
+   * @param action - The action which the bound function is waiting for.
+   * This will also be the action which will be returned to the bound function.
+   */
   toTake<TakePayload>(action: Action<TakePayload>): AssertionOrFinalStage<State, Args, Return>;
 
+  /**
+   * Expect the function to return a certain value.
+   * This is optionally, if this isn't being called, there is no asserting being done on the return value.
+   *
+   * @param value The value which should be returned by the bound function.
+   */
   toReturn(value: Return): FinalStateStage<State> & RunStage;
 }
 
-interface FinalStateStage<State> {
+interface FinalStateStage<State> extends RunStage {
+  /**
+   * Assert on the final state of the reducer.
+   *
+   * @param state
+   */
   toHaveFinalState(state: State): RunStage;
 }
 
 interface RunStage {
+  /**
+   * Run the function and validate the assertions.
+   *
+   * @param timeout An optional timeout after which the test will fail.
+   */
   run(timeout?: number): Promise<void>;
 }
 
@@ -73,7 +132,7 @@ class BoundFunctionTest<State, Args extends any[], Return>
 
   private returnValue: Return | symbol = NO_RETURN_VALUE;
 
-  private store: Store<State> = createStore((state = ({} as unknown) as State) => state, undefined);
+  private store: Store<State> | null = null;
 
   private finalState: State | undefined;
 
@@ -160,7 +219,7 @@ class BoundFunctionTest<State, Args extends any[], Return>
   }
 
   public async run(timeout: number = 10 * 1000) {
-    if (!this.store) {
+    if (this.store === null) {
       throw new Error('Missing store');
     }
 
