@@ -17,16 +17,25 @@ interface WithReducerStage<State, Payload> {
   withReducer(reducer: Reducer<State, any>, initialState?: DeepPartial<State>): WithMocksStage<State, Payload>;
 }
 
-interface WithMocksStage<State, Payload> extends AssertionStage<State, Payload> {
+interface WithMocksStage<State, Payload> extends WhenDispatchedStage<State, Payload> {
   /**
    * Supply some mocks which will be used instead of the real functions.
    *
    * @param mocks The array of mocks to be used by the bound function.
    */
-  withMocks(mocks: Mocks<State>): AssertionStage<State, Payload>;
+  withMocks(mocks: Mocks<State>): WhenDispatchedStage<State, Payload>;
 }
 
-interface AssertionStage<State, Payload> extends DispatchActionStage<State, Payload> {
+interface WhenDispatchedStage<State, Payload> {
+  /**
+   * Dispatch an action to the store to start the saga.
+   *
+   * @param action The action to start the saga.
+   */
+  whenDispatched(action: Action<Payload>): AssertionStage<State>;
+}
+
+interface AssertionStage<State> {
   /**
    * Expect the bound function to call another function.
    * The arguments have to match completely.
@@ -34,7 +43,7 @@ interface AssertionStage<State, Payload> extends DispatchActionStage<State, Payl
    * @param fn
    * @param args The arguments the function should be called with.
    */
-  toCall<Args extends any[], Return>(fn: (...args: Args) => Return, ...args: Args): AssertionStage<State, Payload>;
+  toCall<Args extends any[], Return>(fn: (...args: Args) => Return, ...args: Args): AssertionStage<State>;
 
   /**
    * Expect the bound function to run another bound function.
@@ -46,7 +55,7 @@ interface AssertionStage<State, Payload> extends DispatchActionStage<State, Payl
   toRun<Args extends any[], Return>(
     effect: SagaFunc<State, Args, Return>,
     ...args: Args
-  ): AssertionStage<State, Payload>;
+  ): AssertionStage<State>;
 
   /**
    * Expect the bound function to spawn another bound function.
@@ -58,14 +67,14 @@ interface AssertionStage<State, Payload> extends DispatchActionStage<State, Payl
   toSpawn<Args extends any[], Return>(
     effect: SagaFunc<State, Args, Return>,
     ...args: Args
-  ): AssertionStage<State, Payload>;
+  ): AssertionStage<State>;
 
   /**
    * Expect an action to be dispatched.
    *
    * @param action The action which should be dispatched.
    */
-  toDispatch<DispatchPayload>(action: Action<DispatchPayload>): AssertionStage<State, Payload>;
+  toDispatch<DispatchPayload>(action: Action<DispatchPayload>): AssertionStage<State>;
 
   /**
    * Expect the bound effect to wait for an action.
@@ -73,19 +82,8 @@ interface AssertionStage<State, Payload> extends DispatchActionStage<State, Payl
    * @param action - The action which the bound function is waiting for.
    * This will also be the action which will be returned to the bound function.
    */
-  toTake<TakePayload>(action: Action<TakePayload>): AssertionStage<State, Payload>;
-}
+  toTake<TakePayload>(action: Action<TakePayload>): AssertionStage<State>;
 
-interface DispatchActionStage<State, Payload> {
-  /**
-   * Dispatch an action to the store to start the saga.
-   *
-   * @param action The action to start the saga.
-   */
-  dispatch(action: Action<Payload>): FinalStateStage<State>;
-}
-
-interface FinalStateStage<State> extends RunStage {
   /**
    * Assert on the final state of the reducer.
    *
@@ -107,9 +105,8 @@ class SagaTest<State, Payload>
   implements
     WithReducerStage<State, Payload>,
     WithMocksStage<State, Payload>,
-    AssertionStage<State, Payload>,
-    DispatchActionStage<State, Payload>,
-    FinalStateStage<State>,
+    WhenDispatchedStage<State, Payload>,
+    AssertionStage<State>,
     RunStage {
   private readonly saga: Saga<State, Payload>;
 
@@ -136,8 +133,14 @@ class SagaTest<State, Payload>
     return this;
   }
 
-  public withMocks(mocks: Mocks<State>): AssertionStage<State, Payload> {
+  public withMocks(mocks: Mocks<State>): WhenDispatchedStage<State, Payload> {
     this.mocks = mocks;
+
+    return this;
+  }
+
+  public whenDispatched(action: Action<Payload>): AssertionStage<State> {
+    this.action = action;
 
     return this;
   }
@@ -145,7 +148,7 @@ class SagaTest<State, Payload>
   public toCall<Args extends any[], Return>(
     func: (...args: Args) => Return,
     ...args: Args
-  ): AssertionStage<State, Payload> {
+  ): AssertionStage<State> {
     this.asserts.push({
       type: 'call',
       func,
@@ -157,7 +160,7 @@ class SagaTest<State, Payload>
   public toRun<Args extends any[], Return>(
     func: SagaFunc<State, Args, Return>,
     ...args: Args
-  ): AssertionStage<State, Payload> {
+  ): AssertionStage<State> {
     this.asserts.push({
       type: 'run',
       func,
@@ -170,7 +173,7 @@ class SagaTest<State, Payload>
   public toSpawn<Args extends any[], Return>(
     func: SagaFunc<State, Args, Return>,
     ...args: Args
-  ): AssertionStage<State, Payload> {
+  ): AssertionStage<State> {
     this.asserts.push({
       type: 'spawn',
       func,
@@ -180,7 +183,7 @@ class SagaTest<State, Payload>
     return this;
   }
 
-  public toDispatch<DispatchPayload>(action: Action<DispatchPayload>): AssertionStage<State, Payload> {
+  public toDispatch<DispatchPayload>(action: Action<DispatchPayload>): AssertionStage<State> {
     this.asserts.push({
       type: 'dispatch',
       action,
@@ -189,17 +192,11 @@ class SagaTest<State, Payload>
     return this;
   }
 
-  public toTake<TakePayload>(action: Action<TakePayload>): AssertionStage<State, Payload> {
+  public toTake<TakePayload>(action: Action<TakePayload>): AssertionStage<State> {
     this.asserts.push({
       type: 'take',
       action,
     });
-
-    return this;
-  }
-
-  public dispatch(action: Action<Payload>): FinalStateStage<State> {
-    this.action = action;
 
     return this;
   }
