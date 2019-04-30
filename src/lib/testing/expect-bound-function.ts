@@ -23,7 +23,6 @@ interface WithMocksStage<State, Args extends any[], Return> {
    *
    * @param mocks The array of mocks to be used by the bound function.
    */
-
   andMocks(mocks: Mocks<State>): CallStage<State, Args, Return>;
 }
 
