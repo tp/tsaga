@@ -6,7 +6,8 @@
     "target": "es5",
     "strict": true,
     "outDir": "./compiled",
-    "declaration": true
+    "declaration": true,
+    "esModuleInterop": true
   },
   "include": ["src/**/*"],
   "exclude": ["src/compilationSamples/samples/**/*"]

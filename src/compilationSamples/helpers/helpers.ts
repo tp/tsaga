@@ -15,6 +15,7 @@ export const defaultCompilerOptions: ts.CompilerOptions = {
   target: ts.ScriptTarget.ES2016,
   module: ts.ModuleKind.CommonJS,
   jsxFactory: 'react',
+  esModuleInterop: true,
 };
 
 export function reducedDiagnostic(diagnostic: ts.Diagnostic): ReducedDiagnostic {

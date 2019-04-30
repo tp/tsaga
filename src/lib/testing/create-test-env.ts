@@ -1,3 +1,4 @@
+import expect from 'expect';
 import { MiddlewareAPI } from 'redux';
 import { SagaEnvironment } from '../types';
 import { Asserts } from './assertions';
