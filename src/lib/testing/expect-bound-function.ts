@@ -80,7 +80,7 @@ interface AssertionStage<State, Args extends any[], Return> extends FinalStateSt
 
   /**
    * Expect the function to return a certain value.
-   * This is optionally, if this isn't being called, there is no asserting being done on the return value.
+   * This is optional, if this isn't being called, there is no asserting being done on the return value.
    *
    * @param value The value which should be returned by the bound function.
    */
