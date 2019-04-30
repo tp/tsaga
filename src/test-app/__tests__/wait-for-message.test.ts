@@ -10,8 +10,6 @@ nock.disableNetConnect();
 
 test('waitFor functionality test', async () => {
   const waitForSaga = forLatest(userSelected, async ({ dispatch, select, run, take }, payload) => {
-    console.error(`waitfor saga started`);
-
     const { count } = await take(setCount);
 
     dispatch(setCount({ count: count + 5 }));
@@ -22,8 +20,6 @@ test('waitFor functionality test', async () => {
   const store = createStore(userReducer, applyMiddleware(middleware));
 
   store.dispatch(userSelected({ id: -1 })); // Just to trigger saga
-
-  console.error(`about to dispatch set count`);
 
   store.dispatch(setCount({ count: 3 }));
 

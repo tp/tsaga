@@ -1,7 +1,7 @@
 import { deepStrictEqual, fail } from 'assert';
 import { Action, ActionCreator, isType } from 'typescript-fsa';
-import { Saga, SagaEnvironment } from '.';
-import { SagaFunc } from './types';
+import { Saga, SagaEnvironment } from '../index';
+import { SagaFunc } from '../types';
 
 export function calls<P extends any[], T>(
   func: (...params: P) => T,
