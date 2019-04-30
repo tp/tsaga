@@ -14,10 +14,7 @@ interface WithReducerStage<State, Args extends any[], Return> {
    * @param initialState Initial state. If none is provided,
    * the `reducer` will be called once without an action to generate the initial state
    */
-  withReducer(
-    reducer: Reducer<State, any>,
-    initialState?: DeepPartial<State>,
-  ): WithMocksStage<State, Args, Return>;
+  withReducer(reducer: Reducer<State, any>, initialState?: DeepPartial<State>): WithMocksStage<State, Args, Return>;
 }
 
 interface WithMocksStage<State, Args extends any[], Return> extends CallStage<State, Args, Return> {
@@ -136,10 +133,7 @@ class BoundFunctionTest<State, Args extends any[], Return>
     this.func = func;
   }
 
-  public withReducer(
-    reducer: Reducer<State>,
-    initialState?: DeepPartial<State>,
-  ): WithMocksStage<State, Args, Return> {
+  public withReducer(reducer: Reducer<State>, initialState?: DeepPartial<State>): WithMocksStage<State, Args, Return> {
     this.store = createStore(reducer, initialState);
 
     return this;
