@@ -7,15 +7,25 @@ import { createTestEnvironment } from './create-test-env';
 import { Mocks } from './mocks';
 
 interface WithReducerStage<State, Args extends any[], Return> {
-  withReducer(reducer: Reducer<State, any>, initialState?: DeepPartial<State>): WithMocksStage<State, Args, Return>;
+  /**
+   * Sets the `reducer` for the test environment
+   *
+   * @param reducer
+   * @param initialState Initial state. If none is provided,
+   * the `reducer` will be called once without an action to generate the initial state
+   */
+  withReducer(
+    reducer: Reducer<State, any>,
+    initialState?: DeepPartial<State>,
+  ): CallStage<State, Args, Return> & WithMocksStage<State, Args, Return>;
 }
 
 interface WithMocksStage<State, Args extends any[], Return> extends CallStage<State, Args, Return> {
-  withMocks(mocks: Mocks<State>): CallStage<State, Args, Return>;
+  andMocks(mocks: Mocks<State>): CallStage<State, Args, Return>;
 }
 
 interface CallStage<State, Args extends any[], Return> {
-  whenCalledWith(...args: Args): AssertionStage<State, Args, Return>;
+  calledWith(...args: Args): AssertionStage<State, Args, Return>;
 }
 
 interface AssertionStage<State, Args extends any[], Return> extends FinalStateStage<State> {
@@ -42,7 +52,12 @@ interface RunStage {
 
 const NO_RETURN_VALUE = Symbol('NO_RETURN_VALUE');
 
-class BoundFunctionTest<State, Args extends any[], Return> {
+class BoundFunctionTest<State, Args extends any[], Return>
+  implements
+    CallStage<State, Args, Return>,
+    WithMocksStage<State, Args, Return>,
+    WithReducerStage<State, Args, Return>,
+    AssertionStage<State, Args, Return> {
   private readonly func: SagaFunc<State, Args, Return>;
 
   private mocks: Mocks<State> = [];
@@ -61,19 +76,22 @@ class BoundFunctionTest<State, Args extends any[], Return> {
     this.func = func;
   }
 
-  public withReducer(reducer: Reducer<State>, initialState?: DeepPartial<State>): WithMocksStage<State, Args, Return> {
+  public withReducer(
+    reducer: Reducer<State>,
+    initialState?: DeepPartial<State>,
+  ): CallStage<State, Args, Return> & WithMocksStage<State, Args, Return> {
     this.store = createStore(reducer, initialState);
 
     return this;
   }
 
-  public withMocks(mocks: Mocks<State>): CallStage<State, Args, Return> {
+  public andMocks(mocks: Mocks<State>): CallStage<State, Args, Return> {
     this.mocks = mocks;
 
     return this;
   }
 
-  public whenCalledWith(...args: Args): AssertionStage<State, Args, Return> {
+  public calledWith(...args: Args): AssertionStage<State, Args, Return> {
     this.args = args;
 
     return this;
