@@ -53,16 +53,16 @@ const watchForPostText = forEvery(postText, async ($, { text }) => {
 test('Saga test', async () => {
   expectSaga(watchForPostText)
     .withReducer(sampleIdentityCountReducer)
-    .withMocks([select(stringLongerThanCountSelector, 5 /* should be `boolean` */)])
+    .andMocks([select(stringLongerThanCountSelector, 5 /* should be `boolean` */)])
+    .whenDispatched(wrongAction({ notText: 'asdf' }))
     .toCall(fetch, new Response(undefined, { status: 200 }))
     .toCall(fetch, 404)
-    .dispatch(wrongAction({ notText: 'asdf' }))
     .toHaveFinalState({ count: '1' /* should be `number` */ })
     .run();
 
   return expectSaga(watchForPostText)
     .withReducer(sampleIdentityCountReducer)
-    .dispatch(postText({ text: 'asdf' }))
+    .whenDispatched(postText({ text: 'asdf' }))
     .toHaveFinalState({ count: '1' /* should be `number` */ })
     .run();
 });

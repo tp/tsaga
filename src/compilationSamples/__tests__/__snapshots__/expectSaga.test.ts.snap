@@ -11,17 +11,17 @@ Array [
     Property 'text' is missing in type 'CountReducerState' but required in type '{ text: string; }'.",
   },
   Object {
-    "character": 54,
+    "character": 53,
     "fileName": "expectSaga-test.ts",
     "line": 55,
     "message": "Argument of type '5' is not assignable to parameter of type 'boolean'.",
   },
   Object {
-    "character": 19,
+    "character": 20,
     "fileName": "expectSaga-test.ts",
     "line": 56,
-    "message": "Argument of type 'Response' is not assignable to parameter of type 'string | Request'.
-  Type 'Response' is missing the following properties from type 'Request': context, method, redirect, referrer, and 5 more.",
+    "message": "Argument of type 'Action<{ notText: string; }>' is not assignable to parameter of type 'Action<{ text: string; }>'.
+  Property 'text' is missing in type '{ notText: string; }' but required in type '{ text: string; }'.",
   },
   Object {
     "character": 24,
