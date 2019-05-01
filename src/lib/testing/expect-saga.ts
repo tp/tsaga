@@ -23,7 +23,7 @@ interface WithMocksStage<State, Payload> extends WhenDispatchedStage<State, Payl
    *
    * @param mocks The array of mocks to be used by the bound function.
    */
-  withMocks(mocks: Mocks<State>): WhenDispatchedStage<State, Payload>;
+  andMocks(mocks: Mocks<State>): WhenDispatchedStage<State, Payload>;
 }
 
 interface WhenDispatchedStage<State, Payload> {
@@ -133,7 +133,7 @@ class SagaTest<State, Payload>
     return this;
   }
 
-  public withMocks(mocks: Mocks<State>): WhenDispatchedStage<State, Payload> {
+  public andMocks(mocks: Mocks<State>): WhenDispatchedStage<State, Payload> {
     this.mocks = mocks;
 
     return this;
