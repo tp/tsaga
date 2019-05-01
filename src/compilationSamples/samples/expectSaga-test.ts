@@ -30,7 +30,7 @@ export const stringLongerThanCountSelector = createSelector(
 
 const createActionCreator = actionCreatorFactory('User');
 const postText = createActionCreator<{ text: string }>('set_count');
-const wrongAction = createActionCreator<{ notText: string }>('asdfasdfasdfasfd');
+const wrongAction = createActionCreator<{ notText: string }>('inapt_test_action');
 
 const forEvery = createTypedForEvery<CountReducerState>();
 
@@ -53,16 +53,24 @@ const watchForPostText = forEvery(postText, async ($, { text }) => {
 test('Saga test', async () => {
   expectSaga(watchForPostText)
     .withReducer(sampleIdentityCountReducer)
-    .withMocks([select(stringLongerThanCountSelector, 5 /* should be `boolean` */)])
-    .toCall(fetch, new Response(undefined, { status: 200 }))
-    .toCall(fetch, 404)
-    .dispatch(wrongAction({ notText: 'asdf' }))
+    .andMocks([select(stringLongerThanCountSelector, 5 /* should be `boolean` */)])
+    .whenDispatched(wrongAction({ notText: 'asdf' })) /* should be action with `text` property */
+    .toHaveFinalState({ count: '1' /* should be `number` */ })
+    .run();
+
+  expectSaga(watchForPostText)
+    .withReducer(sampleIdentityCountReducer)
+    .whenDispatched(postText({ text: 'asdf' }))
+    .toCall(
+      fetch,
+      new Response(undefined, { status: 200 }),
+    ) /* should error as `Response` is not a `string` or `Request` */
     .toHaveFinalState({ count: '1' /* should be `number` */ })
     .run();
 
   return expectSaga(watchForPostText)
     .withReducer(sampleIdentityCountReducer)
-    .dispatch(postText({ text: 'asdf' }))
+    .whenDispatched(postText({ text: 'asdf' }))
     .toHaveFinalState({ count: '1' /* should be `number` */ })
     .run();
 });

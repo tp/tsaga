@@ -12,9 +12,9 @@ nock.disableNetConnect();
 test('Test helper with mocked sleep call', () => {
   return expectSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
     .withReducer(userReducer)
-    .withMocks([call(sleep, Promise.resolve())])
+    .andMocks([call(sleep, Promise.resolve())])
+    .whenDispatched(userSelected({ id: 2 }))
     .toCall(sleep, 3000)
-    .dispatch(userSelected({ id: 2 }))
     .toHaveFinalState({ count: 1, selectedUser: 2, usersById: {} })
     .run();
 }, 500 /* something below the 3s sleep */);
@@ -22,9 +22,9 @@ test('Test helper with mocked sleep call', () => {
 test('Test helper with mocked select', async () => {
   return expectSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
     .withReducer(userReducer)
-    .withMocks([call(sleep, Promise.resolve()), select(getCount, 5)])
+    .andMocks([call(sleep, Promise.resolve()), select(getCount, 5)])
+    .whenDispatched(userSelected({ id: 2 }))
     .toCall(sleep, 3000)
-    .dispatch(userSelected({ id: 2 }))
     .toHaveFinalState({ count: 6, selectedUser: 2, usersById: {} })
     .run();
 }, 500 /* something below the 3s sleep */);
@@ -32,10 +32,10 @@ test('Test helper with mocked select', async () => {
 test('Test helper asserting on message', async () => {
   return expectSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
     .withReducer(userReducer)
-    .withMocks([call(sleep, Promise.resolve()), select(getCount, 5)])
+    .andMocks([call(sleep, Promise.resolve()), select(getCount, 5)])
+    .whenDispatched(userSelected({ id: 2 }))
     .toCall(sleep, 3000)
     .toDispatch(setCount({ count: 6 }))
-    .dispatch(userSelected({ id: 2 }))
     .toHaveFinalState({ count: 6, selectedUser: 2, usersById: {} })
     .run();
 }, 500 /* something below the 3s sleep */);
@@ -44,10 +44,10 @@ test("Test helper asserting on message, fails of message doesn't match", async (
   try {
     await expectSaga(watchForUserSelectorToCountIfNotChangedWithing3s)
       .withReducer(userReducer)
-      .withMocks([call(sleep, Promise.resolve())])
+      .andMocks([call(sleep, Promise.resolve())])
+      .whenDispatched(userSelected({ id: 2 }))
       .toCall(sleep, 3000)
       .toDispatch(setCount({ count: 9999 }))
-      .dispatch(userSelected({ id: 2 }))
       .toHaveFinalState({ count: 6, selectedUser: 2, usersById: {} })
       .run();
   } catch (e) {
