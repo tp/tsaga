@@ -52,10 +52,7 @@ interface AssertionStage<State> {
    * @param effect
    * @param args The arguments the effect should be called with.
    */
-  toRun<Args extends any[], Return>(
-    effect: SagaFunc<State, Args, Return>,
-    ...args: Args
-  ): AssertionStage<State>;
+  toRun<Args extends any[], Return>(effect: SagaFunc<State, Args, Return>, ...args: Args): AssertionStage<State>;
 
   /**
    * Expect the bound function to spawn another bound function.
@@ -64,10 +61,7 @@ interface AssertionStage<State> {
    * @param effect
    * @param args The arguments the effect should be called with.
    */
-  toSpawn<Args extends any[], Return>(
-    effect: SagaFunc<State, Args, Return>,
-    ...args: Args
-  ): AssertionStage<State>;
+  toSpawn<Args extends any[], Return>(effect: SagaFunc<State, Args, Return>, ...args: Args): AssertionStage<State>;
 
   /**
    * Expect an action to be dispatched.
@@ -145,10 +139,7 @@ class SagaTest<State, Payload>
     return this;
   }
 
-  public toCall<Args extends any[], Return>(
-    func: (...args: Args) => Return,
-    ...args: Args
-  ): AssertionStage<State> {
+  public toCall<Args extends any[], Return>(func: (...args: Args) => Return, ...args: Args): AssertionStage<State> {
     this.asserts.push({
       type: 'call',
       func,
@@ -157,10 +148,7 @@ class SagaTest<State, Payload>
 
     return this;
   }
-  public toRun<Args extends any[], Return>(
-    func: SagaFunc<State, Args, Return>,
-    ...args: Args
-  ): AssertionStage<State> {
+  public toRun<Args extends any[], Return>(func: SagaFunc<State, Args, Return>, ...args: Args): AssertionStage<State> {
     this.asserts.push({
       type: 'run',
       func,
