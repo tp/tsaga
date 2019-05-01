@@ -6,5 +6,5 @@ test('expectSaga forces compiler errors when invalid types are used', async () =
   expect(diagnostics).toMatchSnapshot();
 
   // explicit alignment with comments in file, to catch accidental snapshot overwrite
-  expect(diagnostics.length).toBe(4);
+  expect(diagnostics.length).toBe(5);
 });
