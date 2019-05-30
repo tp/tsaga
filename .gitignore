@@ -1,3 +1,4 @@
+dist/
 node_modules/
 compiled/
 yarn-error.log
