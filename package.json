@@ -1,13 +1,14 @@
 {
   "name": "tsaga",
-  "version": "2.4.1",
+  "version": "2.5.0",
   "description": "Typesafe and lightweight way to write functions with asynchronous side-effects that are easily testable.",
-  "main": "compiled/lib/index.js",
-  "types": "compiled/lib/index.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "repository": "https://github.com/tp/tsaga.git",
   "author": "Timm Preetz <timm@preetz.us>",
   "license": "(MIT OR Apache-2.0)",
   "devDependencies": {
+    "@ef-carbon/tspm": "2.2.5",
     "@types/jest": "^24",
     "@types/lodash": "^4.14.109",
     "@types/nock": "^9.1.3",
@@ -33,14 +34,10 @@
     "lint": "tslint -c tslint.json --project .",
     "ts-check": "tsc -w --noEmit",
     "test": "prettier --list-different \"src/**/*.{ts,tsx}\" && tsc --noEmit && yarn lint && jest",
-    "test:updateSnapshots": "jest --updateSnapshot",
-    "prepublishOnly": "rimraf compiled/ && tsc"
+    "test:updateSnapshots": "jest --updateSnapshot"
   },
   "dependencies": {
     "expect": "^24.7.1",
     "typescript-fsa": "^2.5"
-  },
-  "files": [
-    "compiled/lib/**/*"
-  ]
+  }
 }
