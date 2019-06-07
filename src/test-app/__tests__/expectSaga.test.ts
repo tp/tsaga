@@ -53,21 +53,19 @@ test("Test helper asserting on message, fails of message doesn't match", async (
   } catch (e) {
     expect(e.message.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''))
       .toMatchInlineSnapshot(`
-"expect(received).toEqual(expected)
+      "expect(received).toEqual(expected) // deep equality
 
-Difference:
+      - Expected
+      + Received
 
-- Expected
-+ Received
-
-  Object {
-    \\"payload\\": Object {
--     \\"count\\": 9999,
-+     \\"count\\": 1,
-    },
-    \\"type\\": \\"User/set_count\\",
-  }"
-`);
+        Object {
+          \\"payload\\": Object {
+      -     \\"count\\": 9999,
+      +     \\"count\\": 1,
+          },
+          \\"type\\": \\"User/set_count\\",
+        }"
+    `);
 
     return;
   }
