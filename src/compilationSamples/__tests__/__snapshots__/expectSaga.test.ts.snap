@@ -27,7 +27,7 @@ Array [
     "character": 6,
     "fileName": "expectSaga-test.ts",
     "line": 65,
-    "message": "Argument of type 'Response' is not assignable to parameter of type 'string | Request'.
+    "message": "Argument of type 'Response' is not assignable to parameter of type 'RequestInfo'.
   Type 'Response' is missing the following properties from type 'Request': context, method, redirect, referrer, and 5 more.",
   },
   Object {

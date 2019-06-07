@@ -113,7 +113,7 @@ type AssertionOrFinalStage<State, Args extends any[], Return> = AssertionStage<S
 
 const NO_RETURN_VALUE = Symbol('NO_RETURN_VALUE');
 
-class BoundFunctionTest<State, Args extends any[], Return>
+class BoundFunctionTest<State extends object, Args extends any[], Return>
   implements
     WithReducerStage<State, Args, Return>,
     WithMocksStage<State, Args, Return>,
@@ -260,7 +260,7 @@ class BoundFunctionTest<State, Args extends any[], Return>
   }
 }
 
-export function expectBoundFunction<State, Args extends any[], Return>(
+export function expectBoundFunction<State extends object, Args extends any[], Return>(
   func: SagaFunc<State, Args, Return>,
 ): WithReducerStage<State, Args, Return> {
   return new BoundFunctionTest(func);
