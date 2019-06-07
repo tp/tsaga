@@ -95,7 +95,7 @@ interface RunStage {
   run(timeout?: number): Promise<void>;
 }
 
-class SagaTest<State, Payload>
+class SagaTest<State extends object, Payload>
   implements
     WithReducerStage<State, Payload>,
     WithMocksStage<State, Payload>,
@@ -237,6 +237,8 @@ class SagaTest<State, Payload>
   }
 }
 
-export function expectSaga<State, Payload>(saga: Saga<State, Payload>): WithReducerStage<State, Payload> {
+export function expectSaga<State extends object, Payload>(
+  saga: Saga<State, Payload>,
+): WithReducerStage<State, Payload> {
   return new SagaTest(saga);
 }
