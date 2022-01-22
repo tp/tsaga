@@ -16,7 +16,7 @@
     "jest": "^24",
     "lodash": "^4.17.10",
     "nock": "^10",
-    "node-fetch": "^2.1.2",
+    "node-fetch": "^3.1.1",
     "prettier": "^1.16.4",
     "redux": "^4.0.0",
     "reselect": "^4.0",
