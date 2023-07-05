@@ -1,6 +1,6 @@
 {
   "name": "tsaga",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Typesafe and lightweight way to write functions with asynchronous side-effects that are easily testable.",
   "main": "index.js",
   "types": "index.d.ts",
